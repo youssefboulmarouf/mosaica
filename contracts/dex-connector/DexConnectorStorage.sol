@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
-contract DexConnectorManager is Ownable {
+contract DexConnectorStorage is Ownable {
 
     event DexConnectorAddedEvent(address connectorContractAddress);
     event DexConnectorRemovedEvent(address connectorContractAddress);
@@ -13,7 +13,7 @@ contract DexConnectorManager is Ownable {
     error DexConnectorNotFoundError(address connectorContractAddress);
     error InvalidAddressError();
 
-    // maps `Dex Connector Address` to the `index` of the entry in dexes list
+    // Maps the `Connector Address` to the `index` of the entry in dexes list
     mapping (address => uint256) public dexIndexes;
     address[] public dexes;
 
@@ -38,6 +38,10 @@ contract DexConnectorManager is Ownable {
         dexes.pop();
         delete dexIndexes[_connectorAddress];
         emit DexConnectorRemovedEvent(_connectorAddress);
+    }
+
+    function getDexes() external view returns(address[] memory) {
+        return dexes;
     }
 
     modifier connectorContractFound(address _connectorAddress) {

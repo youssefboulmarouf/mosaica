@@ -1,0 +1,19 @@
+{
+  "name": "mosaica",
+  "version": "1.0.0",
+  "description": "mosaica",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youssefboulmarouf/mosaica.git"
+  },
+  "author": "Youssef Boulmarouf",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/youssefboulmarouf/mosaica/issues"
+  },
+  "homepage": "https://github.com/youssefboulmarouf/mosaica#readme"
+}

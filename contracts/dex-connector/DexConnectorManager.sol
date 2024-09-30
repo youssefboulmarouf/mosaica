@@ -19,13 +19,13 @@ contract DexConnectorManager is Ownable {
 
     constructor() Ownable(msg.sender) {}
 
-    function addDexConnector(address _connectorAddress) external onlyOwner validAddress(_connectorAddress) connectorContractNotFound(_connectorAddress) {
+    function addConnectorContract(address _connectorAddress) external onlyOwner validAddress(_connectorAddress) connectorContractNotFound(_connectorAddress) {
         dexes.push(_connectorAddress);
         dexIndexes[_connectorAddress] = dexes.length - 1;
         emit DexConnectorAddedEvent(_connectorAddress);
     }
 
-    function removeDex(address _connectorAddress) external onlyOwner validAddress(_connectorAddress) dexConnectorFound(_connectorAddress) {
+    function removeConnectorContract(address _connectorAddress) external onlyOwner validAddress(_connectorAddress) connectorContractFound(_connectorAddress) {
         uint256 indexToRemove = dexIndexes[_connectorAddress];
         uint256 lastIndex = dexes.length - 1;
 
@@ -40,7 +40,7 @@ contract DexConnectorManager is Ownable {
         emit DexConnectorRemovedEvent(_connectorAddress);
     }
 
-    modifier dexConnectorFound(address _connectorAddress) {
+    modifier connectorContractFound(address _connectorAddress) {
         if(dexes.length == 0 || dexes[dexIndexes[_connectorAddress]] != _connectorAddress) {
             revert DexConnectorNotFoundError(_connectorAddress);
         }

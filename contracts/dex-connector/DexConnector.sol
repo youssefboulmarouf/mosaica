@@ -16,24 +16,24 @@ abstract contract DexConnector is Ownable {
     function getPrice(address token1, address token2, uint256 amount) external view virtual returns(uint);
     function swapTokens(address token1, address token2, uint256 amount, uint256 minReturn) external virtual;
 
-    function enableDex() external onlyOwner dexDisabled {
+    function enableConnector() external onlyOwner connectorDisabled {
         enabled = true;
         emit DexConnectorEnabledEvent(address(this));
     }
 
-    function disableDex() external onlyOwner dexEnabled {
+    function disableConnector() external onlyOwner connectorEnabled {
         enabled = false;
         emit DexConnectorDisabledEvent(address(this));
     }
 
-    modifier dexDisabled() {
+    modifier connectorDisabled() {
         if(enabled) {
             revert DexConnectorEnabledError(address(this));
         } 
         _;
     }
 
-    modifier dexEnabled() {
+    modifier connectorEnabled() {
         if(! enabled) {
             revert DexConnectorDisabledError(address(this));
         }

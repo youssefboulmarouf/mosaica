@@ -17,15 +17,15 @@ describe("Dex Connector Storage", function () {
     async function AddRandomDex() {
         const { dexConnectorStorage, owner, otherAccount } = await deployDexConnectorStorage();
 
-        const dexFactoryAddress = ethers.Wallet.createRandom();
+        const randomDexAddress = ethers.Wallet.createRandom();
         
         const UniswapV2LikeDex = await ethers.getContractFactory("UniswapV2LikeDex");
-        const uniswapV2LikeDex = await UniswapV2LikeDex.deploy("Random Dex", dexFactoryAddress.address);
+        const uniswapV2LikeDex = await UniswapV2LikeDex.deploy("Random Dex", randomDexAddress.address);
         await uniswapV2LikeDex.waitForDeployment();
 
         await dexConnectorStorage.addConnectorContract(await uniswapV2LikeDex.getAddress());
 
-        return { dexConnectorStorage, uniswapV2LikeDex, dexFactoryAddress, owner, otherAccount };
+        return { dexConnectorStorage, uniswapV2LikeDex, randomDexAddress, owner, otherAccount };
     }
 
     describe("Add Connector Contract", function () {
@@ -87,5 +87,45 @@ describe("Dex Connector Storage", function () {
                 .revertedWithCustomError(dexConnectorStorage, "DexConnectorFoundError")
                 .withArgs(await uniswapV2LikeDex.getAddress());
         });
+    });
+
+    describe("Remove Connector Contract", function () {
+        it("Should Remove Connector Contract", async function () {
+            const { dexConnectorStorage } = await loadFixture(AddRandomDex);
+            
+            let dexes = await dexConnectorStorage.getDexes();
+            expect(dexes.length).equals(1);
+
+            await expect(dexConnectorStorage.removeConnectorContract(dexes[0]))
+                .emit(dexConnectorStorage, "DexConnectorRemovedEvent")
+                .withArgs(dexes[0])
+
+            dexes = await dexConnectorStorage.getDexes();
+            expect(dexes.length).equals(0);
+        });
+
+        it("Should Not Remove Connector Contract When Not Owner", async function () {
+            const { dexConnectorStorage, randomDexAddress, otherAccount } = await loadFixture(AddRandomDex);
+            
+            await expect(dexConnectorStorage.connect(otherAccount).removeConnectorContract(randomDexAddress.address))
+                .revertedWithCustomError(dexConnectorStorage, "OwnableUnauthorizedAccount")
+                .withArgs(otherAccount);
+        });
+
+        it("Should Not Add Connector Contract When Invalid Address", async function () {
+            const { dexConnectorStorage } = await loadFixture(AddRandomDex);
+            
+            await expect(dexConnectorStorage.removeConnectorContract(ethers.ZeroAddress))
+                .revertedWithCustomError(dexConnectorStorage, "InvalidAddressError");
+        });
+
+        it("Should Not Remove Connector Contract When Dex Not Found", async function () {
+            const { dexConnectorStorage } = await loadFixture(AddRandomDex);
+            const randomDexAddress = ethers.Wallet.createRandom();
+            
+            await expect(dexConnectorStorage.removeConnectorContract(randomDexAddress.address))
+                .revertedWithCustomError(dexConnectorStorage, "DexConnectorNotFoundError")
+                .withArgs(randomDexAddress.address);
+        })
     });
 });

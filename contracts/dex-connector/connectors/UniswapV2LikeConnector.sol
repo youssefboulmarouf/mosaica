@@ -2,36 +2,44 @@
 pragma solidity ^0.8.24;
 
 import {IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import {IUniswapV2Factory} from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import {IUniswapV2Pair} from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {DexConnector} from "./DexConnector.sol";
 import "hardhat/console.sol";
 
 contract UniswapV2LikeConnector is DexConnector {
 
-    address public routerAddress;
+    IUniswapV2Router02 public router;
 
     constructor(string memory _dexName, address _routerAddress) Ownable(msg.sender) {
         dexName = _dexName;
         enabled = false;
-        routerAddress = _routerAddress;
+        router = IUniswapV2Router02(_routerAddress);
     }
 
     function getPrice(address token1, address token2, uint256 amount) external view override returns(uint) {
-        address[] memory path = new address[](2);
-        path[0] = token1;
-        path[1] = token2;
-
-        IUniswapV2Router02 uniswapV2Router = IUniswapV2Router02(routerAddress);
-        uint256[] memory amountsOut = uniswapV2Router.getAmountsOut(amount, path);
-        return amountsOut[1];
+        address[] memory path = pathFinder(token1, token2, router.WETH());
+        uint256[] memory amountsOut = router.getAmountsOut(amount, path);
+        return amountsOut[amountsOut.length - 1];
     }
 
     function swapTokens(address token1, address token2, uint256 amount, uint256 minReturn) external override {
-        address[] memory path = new address[](2);
-        path[0] = token1;
-        path[1] = token2;
+        address[] memory path = pathFinder(token1, token2, router.WETH());
+        router.swapExactTokensForTokens(amount, minReturn, path, msg.sender, block.timestamp);
+    }
 
-        IUniswapV2Router02 uniswapV2Router = IUniswapV2Router02(routerAddress);
-        uniswapV2Router.swapExactTokensForTokens(amount, minReturn, path, msg.sender, block.timestamp);
+    function pathFinder(address token1, address token2, address weth) internal pure returns(address[] memory path) {
+        bool oneOfTokensIsWeth = token1 == weth || token2 == weth;
+        if (oneOfTokensIsWeth) {
+            path = new address[](2);
+            path[0] = token1;
+            path[1] = token2;
+        } else {
+            path = new address[](3);
+            path[0] = token1;
+            path[1] = weth;
+            path[2] = token2;
+        }
     }
 }

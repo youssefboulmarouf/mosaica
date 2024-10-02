@@ -29,7 +29,7 @@ contract PriceAggregator is Ownable {
             if (dex.enabled()) {
                 dexPrices[dexPricesIndex] = DexPrice(
                     dexes[dexesIndex],
-                    dex.getPrice(asset, baseToken, amount)
+                    fetchPrice(dex, asset, baseToken, amount)
                 );
                 dexPricesIndex++;
             }
@@ -42,6 +42,14 @@ contract PriceAggregator is Ownable {
             if (dex.enabled()) {
                 count++;
             }
+        }
+    }
+
+    function fetchPrice(DexConnector dex, address asset, address baseToken, uint256 amount) internal view returns(uint256) {
+        try dex.getPrice(asset, baseToken, amount) returns (uint256 price) {
+            return price;
+        } catch  {
+            return 0;
         }
     }
 }

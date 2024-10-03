@@ -2,8 +2,6 @@
 pragma solidity ^0.8.24;
 
 import {IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import {IUniswapV2Factory} from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-import {IUniswapV2Pair} from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {DexConnector} from "./DexConnector.sol";
 import "hardhat/console.sol";

@@ -64,74 +64,74 @@ describe("Price Aggregator", function () {
     }
 
     describe("Get Prices", function () {
-        // it("Should Get Empty Prices When No Connector Contract Enabled", async function () {
-        //     const { priceAggregator } = await loadFixture(deployPriceAggregator);
-        //     const dexPrices = await priceAggregator.getPrices(DAI, WETH, 1);
-        //     expect(dexPrices.length).equals(0);
-        // });
+        it("Should Get Empty Prices When No Connector Contract Enabled", async function () {
+            const { priceAggregator } = await loadFixture(deployPriceAggregator);
+            const dexPrices = await priceAggregator.getPrices(DAI, WETH, 1);
+            expect(dexPrices.length).equals(0);
+        });
         
-        // it("Should Get Prices Only from Enabled Connector Contract", async function () {
-        //     const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
-        //     const uniswapV2 = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Uniswap V2", UNISWAP_V2_ROUTER);
-        //     await uniswapV2.enableConnector();
-        //     let dexPrices = await priceAggregator.getPrices(WETH, DAI, amount);
+        it("Should Get Prices Only from Enabled Connector Contract", async function () {
+            const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
+            const uniswapV2 = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Uniswap V2", UNISWAP_V2_ROUTER);
+            await uniswapV2.enableConnector();
+            let dexPrices = await priceAggregator.getPrices(WETH, DAI, amount);
             
-        //     expect(dexPrices.length).equals(1);
-        //     expect(dexPrices[0].connectorAddress).equals(await uniswapV2.getAddress());
+            expect(dexPrices.length).equals(1);
+            expect(dexPrices[0].connectorAddress).equals(await uniswapV2.getAddress());
 
-        //     const sushiswap = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Sushiswap", SUSHISWAP_V2_ROUTER);
-        //     await sushiswap.enableConnector();
-        //     dexPrices = await priceAggregator.getPrices(WETH, DAI, amount);
+            const sushiswap = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Sushiswap", SUSHISWAP_V2_ROUTER);
+            await sushiswap.enableConnector();
+            dexPrices = await priceAggregator.getPrices(WETH, DAI, amount);
             
-        //     expect(dexPrices.length).equals(2);
-        //     expect(dexPrices[0].connectorAddress).equals(await uniswapV2.getAddress());
-        //     expect(dexPrices[1].connectorAddress).equals(await sushiswap.getAddress());
-        // });
-
-        // it("Should Get Correct Prices For [WETH, DAI] From Uniswap V2", async function () {
-        //     const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
-        //     const uniswapV2 = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Uniswap V2", UNISWAP_V2_ROUTER);
-        //     await uniswapV2.enableConnector();
-        //     const connectorContract = await priceAggregator.getPrices(WETH, DAI, amount);
-        //     const routerPrice = await getPriceFromRouterContract(UNISWAP_V2_ROUTER, [WETH, DAI], amount);
-        //     expect(connectorContract[0].price).equals(routerPrice);
-        // });
-
-        // it("Should Get Correct Prices For [DAI, WETH, PEPE] From Uniswap V2", async function () {
-        //     const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
-        //     const uniswapV2 = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Uniswap V2", UNISWAP_V2_ROUTER);
-        //     await uniswapV2.enableConnector();
-        //     const connectorContract = await priceAggregator.getPrices(DAI, PEPE, amount);
-        //     const routerPrice = await getPriceFromRouterContract(UNISWAP_V2_ROUTER, [DAI, WETH, PEPE], amount);
-        //     expect(connectorContract[0].price).equals(routerPrice);
-        // });
-
-        // it("Should Get '0' Price For Non Existing Path [0, WETH] From Uniswap V2", async function () {
-        //     const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
-        //     const uniswapV2 = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Uniswap V2", UNISWAP_V2_ROUTER);
-        //     await uniswapV2.enableConnector();
-        //     const connectorContract = await priceAggregator.getPrices(ethers.ZeroAddress, WETH, amount);
-        //     expect(connectorContract[0].price).equals(0);
-        // });
-
-        // it("Should Get Correct Prices For [WETH, DAI] From Sushiswap", async function () {
-        //     const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
-        //     const sushiswap = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Sushiswap", SUSHISWAP_V2_ROUTER);
-        //     await sushiswap.enableConnector();
-        //     const connectorContract = await priceAggregator.getPrices(WETH, DAI, amount);
-        //     const routerPrice = await getPriceFromRouterContract(SUSHISWAP_V2_ROUTER, [WETH, DAI], amount);
-        //     expect(connectorContract[0].price).equals(routerPrice);
-        // });
-        
-        // it("Should Get '0' Price For Non Existing Path [0, WETH] From Sushiswap", async function () {
-        //     const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
-        //     const sushiswap = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Sushiswap", SUSHISWAP_V2_ROUTER);
-        //     await sushiswap.enableConnector();
-        //     const connectorContract = await priceAggregator.getPrices(ethers.ZeroAddress, WETH, amount);
-        //     expect(connectorContract[0].price).equals(0);
-        // });
+            expect(dexPrices.length).equals(2);
+            expect(dexPrices[0].connectorAddress).equals(await uniswapV2.getAddress());
+            expect(dexPrices[1].connectorAddress).equals(await sushiswap.getAddress());
+        });
 
         it("Should Get Correct Prices For [WETH, DAI] From Uniswap V2", async function () {
+            const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
+            const uniswapV2 = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Uniswap V2", UNISWAP_V2_ROUTER);
+            await uniswapV2.enableConnector();
+            const connectorContract = await priceAggregator.getPrices(WETH, DAI, amount);
+            const routerPrice = await getPriceFromRouterContract(UNISWAP_V2_ROUTER, [WETH, DAI], amount);
+            expect(connectorContract[0].price).equals(routerPrice);
+        });
+
+        it("Should Get Correct Prices For [DAI, WETH, PEPE] From Uniswap V2", async function () {
+            const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
+            const uniswapV2 = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Uniswap V2", UNISWAP_V2_ROUTER);
+            await uniswapV2.enableConnector();
+            const connectorContract = await priceAggregator.getPrices(DAI, PEPE, amount);
+            const routerPrice = await getPriceFromRouterContract(UNISWAP_V2_ROUTER, [DAI, WETH, PEPE], amount);
+            expect(connectorContract[0].price).equals(routerPrice);
+        });
+
+        it("Should Get '0' Price For Non Existing Path [0, WETH] From Uniswap V2", async function () {
+            const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
+            const uniswapV2 = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Uniswap V2", UNISWAP_V2_ROUTER);
+            await uniswapV2.enableConnector();
+            const connectorContract = await priceAggregator.getPrices(ethers.ZeroAddress, WETH, amount);
+            expect(connectorContract[0].price).equals(0);
+        });
+
+        it("Should Get Correct Prices For [WETH, DAI] From Sushiswap", async function () {
+            const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
+            const sushiswap = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Sushiswap", SUSHISWAP_V2_ROUTER);
+            await sushiswap.enableConnector();
+            const connectorContract = await priceAggregator.getPrices(WETH, DAI, amount);
+            const routerPrice = await getPriceFromRouterContract(SUSHISWAP_V2_ROUTER, [WETH, DAI], amount);
+            expect(connectorContract[0].price).equals(routerPrice);
+        });
+        
+        it("Should Get '0' Price For Non Existing Path [0, WETH] From Sushiswap", async function () {
+            const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
+            const sushiswap = await addUniswapV2LikeConnectorContract(dexConnectorStorage, "Sushiswap", SUSHISWAP_V2_ROUTER);
+            await sushiswap.enableConnector();
+            const connectorContract = await priceAggregator.getPrices(ethers.ZeroAddress, WETH, amount);
+            expect(connectorContract[0].price).equals(0);
+        });
+
+        it("Should Get Correct Prices For [WETH, DAI] From Kyber", async function () {
             const { dexConnectorStorage, priceAggregator } = await loadFixture(deployPriceAggregator);
             const kyber = await addKyberConnectorContract(dexConnectorStorage);
             await kyber.enableConnector();
@@ -139,7 +139,5 @@ describe("Price Aggregator", function () {
             const kyberPrice = await getPriceFromKyberNetwork(WETH, DAI, amount);
             expect(connectorContract[0].price).equals(kyberPrice);
         });
-
-
     });
 });

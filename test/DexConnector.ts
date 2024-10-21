@@ -4,99 +4,107 @@ import { ethers } from "hardhat";
 
 describe("Dex Connector", function () {
 
+    async function deployMosaicaLib() {    
+        const MosaicaLib = await ethers.getContractFactory("MosaicaLib");
+        const mosaicaLib = await MosaicaLib.deploy();
+        await mosaicaLib.waitForDeployment();
+
+        return { mosaicaLib };
+    }
+
     async function deployRandomConnectorContract() {
         const [owner, otherAccount] = await ethers.getSigners();
         const randomDexAddress = ethers.Wallet.createRandom();
-        
-        const UniswapV2LikeDex = await ethers.getContractFactory("UniswapV2LikeDex");
-        const uniswapV2LikeDex = await UniswapV2LikeDex.deploy("Random Dex", randomDexAddress.address);
-        await uniswapV2LikeDex.waitForDeployment();
+        const { mosaicaLib } = await deployMosaicaLib();
 
-        return { uniswapV2LikeDex, randomDexAddress, owner, otherAccount };
+        const UniswapV2LikeConnector = await ethers.getContractFactory("UniswapV2LikeConnector", {libraries: {MosaicaLib: await mosaicaLib.getAddress()}});
+        const uniswapV2LikeConnector = await UniswapV2LikeConnector.deploy("Random Dex", randomDexAddress.address);
+        await uniswapV2LikeConnector.waitForDeployment();
+
+        return { uniswapV2LikeConnector, randomDexAddress, owner, otherAccount };
     }
 
     describe("Enable Connector Contract", function () {
         it("Should Enable Connector Contract", async function () {
-            const { uniswapV2LikeDex, randomDexAddress } = await loadFixture(deployRandomConnectorContract);
+            const { uniswapV2LikeConnector, randomDexAddress } = await loadFixture(deployRandomConnectorContract);
             
-            const dexName = await uniswapV2LikeDex.dexName();
+            const dexName = await uniswapV2LikeConnector.dexName();
             expect(dexName).equals("Random Dex");
 
-            const routerAddress = await uniswapV2LikeDex.routerAddress();
+            const routerAddress = await uniswapV2LikeConnector.routerAddress();
             expect(routerAddress).equals(randomDexAddress.address);
 
-            let isEnabled = await uniswapV2LikeDex.enabled();
+            let isEnabled = await uniswapV2LikeConnector.enabled();
             expect(isEnabled).equals(false);
 
-            await expect(uniswapV2LikeDex.enableConnector())
-                .emit(uniswapV2LikeDex, "DexConnectorEnabledEvent")
-                .withArgs(await uniswapV2LikeDex.getAddress());
+            await expect(uniswapV2LikeConnector.enableConnector())
+                .emit(uniswapV2LikeConnector, "DexConnectorEnabledEvent")
+                .withArgs(await uniswapV2LikeConnector.getAddress());
 
-            isEnabled = await uniswapV2LikeDex.enabled();
+            isEnabled = await uniswapV2LikeConnector.enabled();
             expect(isEnabled).equals(true);
         });
 
         it("Should Not Enable Connector Contract When Not Owner", async function () {
-            const { uniswapV2LikeDex, otherAccount } = await loadFixture(deployRandomConnectorContract);
+            const { uniswapV2LikeConnector, otherAccount } = await loadFixture(deployRandomConnectorContract);
             
-            await expect(uniswapV2LikeDex.connect(otherAccount).enableConnector())
-                .revertedWithCustomError(uniswapV2LikeDex, "OwnableUnauthorizedAccount")
+            await expect(uniswapV2LikeConnector.connect(otherAccount).enableConnector())
+                .revertedWithCustomError(uniswapV2LikeConnector, "OwnableUnauthorizedAccount")
                 .withArgs(otherAccount);
         });
 
         it("Should Not Enable Connector Contract When Enabled", async function () {
-            const { uniswapV2LikeDex, randomDexAddress, owner, otherAccount } = await loadFixture(deployRandomConnectorContract);
+            const { uniswapV2LikeConnector } = await loadFixture(deployRandomConnectorContract);
             
-            await uniswapV2LikeDex.enableConnector();
-            await expect(uniswapV2LikeDex.enableConnector())
-                .revertedWithCustomError(uniswapV2LikeDex, "DexConnectorEnabledError")
-                .withArgs(await uniswapV2LikeDex.getAddress());
+            await uniswapV2LikeConnector.enableConnector();
+            await expect(uniswapV2LikeConnector.enableConnector())
+                .revertedWithCustomError(uniswapV2LikeConnector, "DexConnectorEnabledError")
+                .withArgs(await uniswapV2LikeConnector.getAddress());
         });
     });
 
     describe("Disable Connector Contract", function () {
-
         async function EnableConnectorContract() {
-            const { uniswapV2LikeDex, randomDexAddress, owner, otherAccount } = await deployRandomConnectorContract();
-            await uniswapV2LikeDex.enableConnector();
-            return { uniswapV2LikeDex, randomDexAddress, owner, otherAccount };
+            const { uniswapV2LikeConnector, randomDexAddress, owner, otherAccount } = await deployRandomConnectorContract();
+            await uniswapV2LikeConnector.enableConnector();
+            return { uniswapV2LikeConnector, randomDexAddress, owner, otherAccount };
         }
 
         it("Should Disable Connector Contract", async function () {
-            const { uniswapV2LikeDex, randomDexAddress } = await loadFixture(EnableConnectorContract);
+            const { uniswapV2LikeConnector, randomDexAddress } = await loadFixture(EnableConnectorContract);
 
-            const dexName = await uniswapV2LikeDex.dexName();
+            const dexName = await uniswapV2LikeConnector.dexName();
             expect(dexName).equals("Random Dex");
 
-            const routerAddress = await uniswapV2LikeDex.routerAddress();
+            const routerAddress = await uniswapV2LikeConnector.routerAddress();
             expect(routerAddress).equals(randomDexAddress.address);
 
-            let isEnabled = await uniswapV2LikeDex.enabled();
+            let isEnabled = await uniswapV2LikeConnector.enabled();
             expect(isEnabled).equals(true);
 
-            await expect(uniswapV2LikeDex.disableConnector())
-                .emit(uniswapV2LikeDex, "DexConnectorDisabledEvent")
-                .withArgs(await uniswapV2LikeDex.getAddress());
+            await expect(uniswapV2LikeConnector.disableConnector())
+                .emit(uniswapV2LikeConnector, "DexConnectorDisabledEvent")
+                .withArgs(await uniswapV2LikeConnector.getAddress());
 
-            isEnabled = await uniswapV2LikeDex.enabled();
+            isEnabled = await uniswapV2LikeConnector.enabled();
             expect(isEnabled).equals(false);
         })
 
         it("Should Not Disable Connector Contract When Not Owner", async function () {
-            const { uniswapV2LikeDex, otherAccount } = await loadFixture(EnableConnectorContract);
+            const { uniswapV2LikeConnector, otherAccount } = await loadFixture(EnableConnectorContract);
             
-            await expect(uniswapV2LikeDex.connect(otherAccount).disableConnector())
-                .revertedWithCustomError(uniswapV2LikeDex, "OwnableUnauthorizedAccount")
+            await expect(uniswapV2LikeConnector.connect(otherAccount).disableConnector())
+                .revertedWithCustomError(uniswapV2LikeConnector, "OwnableUnauthorizedAccount")
                 .withArgs(otherAccount);
         })
 
         it("Should Not Disable Connector Contract When Disabled", async function () {
-            const { uniswapV2LikeDex } = await loadFixture(EnableConnectorContract);
+            const { uniswapV2LikeConnector } = await loadFixture(EnableConnectorContract);
             
-            await uniswapV2LikeDex.disableConnector();
-            await expect(uniswapV2LikeDex.disableConnector())
-                .revertedWithCustomError(uniswapV2LikeDex, "DexConnectorDisabledError")
-                .withArgs(await uniswapV2LikeDex.getAddress());
+            await uniswapV2LikeConnector.disableConnector();
+            await expect(uniswapV2LikeConnector.disableConnector())
+                .revertedWithCustomError(uniswapV2LikeConnector, "DexConnectorDisabledError")
+                .withArgs(await uniswapV2LikeConnector.getAddress());
         })
     })
 });

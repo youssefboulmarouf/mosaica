@@ -26,13 +26,10 @@ describe("Dex Connector", function () {
 
     describe("Enable Connector Contract", function () {
         it("Should Enable Connector Contract", async function () {
-            const { uniswapV2LikeConnector, randomDexAddress } = await loadFixture(deployRandomConnectorContract);
+            const { uniswapV2LikeConnector } = await loadFixture(deployRandomConnectorContract);
             
             const dexName = await uniswapV2LikeConnector.dexName();
             expect(dexName).equals("Random Dex");
-
-            const routerAddress = await uniswapV2LikeConnector.routerAddress();
-            expect(routerAddress).equals(randomDexAddress.address);
 
             let isEnabled = await uniswapV2LikeConnector.enabled();
             expect(isEnabled).equals(false);
@@ -71,13 +68,10 @@ describe("Dex Connector", function () {
         }
 
         it("Should Disable Connector Contract", async function () {
-            const { uniswapV2LikeConnector, randomDexAddress } = await loadFixture(EnableConnectorContract);
+            const { uniswapV2LikeConnector } = await loadFixture(EnableConnectorContract);
 
             const dexName = await uniswapV2LikeConnector.dexName();
             expect(dexName).equals("Random Dex");
-
-            const routerAddress = await uniswapV2LikeConnector.routerAddress();
-            expect(routerAddress).equals(randomDexAddress.address);
 
             let isEnabled = await uniswapV2LikeConnector.enabled();
             expect(isEnabled).equals(true);

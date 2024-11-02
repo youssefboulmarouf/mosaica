@@ -93,7 +93,7 @@ describe("Uniswap V2 Like Connector", function () {
             const daiBalanceBefore = await daiToken.balanceOf(account);
             const uniBalanceBefore = await uniToken.balanceOf(account);
 
-            await uniswapV2LikeConnector.connect(account).swapTokens(DAI, UNI, amount, 5);
+            await uniswapV2LikeConnector.connect(account).swapTokens(DAI, UNI, account.address, amount, 5);
         
             const daiBalanceAfter = await daiToken.balanceOf(account);
             const uniBalanceAfter = await uniToken.balanceOf(account);
@@ -111,7 +111,7 @@ describe("Uniswap V2 Like Connector", function () {
             const daiBalanceBefore = await daiToken.balanceOf(account);
             const ethBalanceBefore = await ethers.provider.getBalance(account);
 
-            await uniswapV2LikeConnector.connect(account).swapTokens(ETH, DAI, amount, 5, {value: amount});
+            await uniswapV2LikeConnector.connect(account).swapTokens(ETH, DAI, account.address, amount, 5, {value: amount});
         
             const daiBalanceAfter = await daiToken.balanceOf(account);
             const ethBalanceAfter = await ethers.provider.getBalance(account);
@@ -129,7 +129,7 @@ describe("Uniswap V2 Like Connector", function () {
             const daiBalanceBefore = await daiToken.balanceOf(account);
             const ethBalanceBefore = await ethers.provider.getBalance(account);
 
-            await uniswapV2LikeConnector.connect(account).swapTokens(DAI, ETH, amount, 5);
+            await uniswapV2LikeConnector.connect(account).swapTokens(DAI, ETH, account.address, amount, 5);
         
             const daiBalanceAfter = await daiToken.balanceOf(account);
             const ethBalanceAfter = await ethers.provider.getBalance(account);
@@ -141,21 +141,21 @@ describe("Uniswap V2 Like Connector", function () {
         it("Should Not Swap Tokens When Identical Tokens", async function () {
             const uniswapV2LikeConnector = await loadFixture(deployUniswapV2LikeConnector);
             const [ account ] = await ethers.getSigners();
-            await expect(uniswapV2LikeConnector.connect(account).swapTokens(DAI, DAI, amount, 5))
+            await expect(uniswapV2LikeConnector.connect(account).swapTokens(DAI, DAI, account.address, amount, 5))
                 .revertedWithCustomError(uniswapV2LikeConnector, "IdenticalTokens");
         });
 
         it("Should Not Swap Eth For Tokens With Different Value And Amount", async function () {
             const uniswapV2LikeConnector = await loadFixture(deployUniswapV2LikeConnector);
             const [ account ] = await ethers.getSigners();
-            await expect(uniswapV2LikeConnector.connect(account).swapTokens(ETH, DAI, 1, 5, {value: amount}))
+            await expect(uniswapV2LikeConnector.connect(account).swapTokens(ETH, DAI, account.address, 1, 5, {value: amount}))
                 .revertedWithCustomError(uniswapV2LikeConnector, "ReceivedDifferentEthValueAndAmount");
         });
 
         it("Should Not Swap Eth For Tokens With Zero Value", async function () {
             const uniswapV2LikeConnector = await loadFixture(deployUniswapV2LikeConnector);
             const [ account ] = await ethers.getSigners();
-            await expect(uniswapV2LikeConnector.connect(account).swapTokens(ETH, DAI, 0, 5, {value: 0}))
+            await expect(uniswapV2LikeConnector.connect(account).swapTokens(ETH, DAI, account.address, 0, 5, {value: 0}))
                 .revertedWithCustomError(uniswapV2LikeConnector, "MissingEthValue");
         });
     }); 

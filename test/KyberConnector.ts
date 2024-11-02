@@ -8,7 +8,7 @@ const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 const UNI = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
 const DAI_WHALE = "0x28C6c06298d514Db089934071355E5743bf21d60";
 
-const amount = ethers.parseEther("1");
+const amount = ethers.parseEther("10");
 
 describe("Kyber Connector", function () {
     async function deployMosaicaLib() {    
@@ -88,7 +88,7 @@ describe("Kyber Connector", function () {
             const daiBalanceBefore = await daiToken.balanceOf(account);
             const uniBalanceBefore = await uniToken.balanceOf(account);
 
-            await kyberConnector.connect(account).swapTokens(DAI, UNI, amount, 5);
+            await kyberConnector.connect(account).swapTokens(DAI, UNI, account.address, amount, 5);
         
             const daiBalanceAfter = await daiToken.balanceOf(account);
             const uniBalanceAfter = await uniToken.balanceOf(account);
@@ -106,7 +106,7 @@ describe("Kyber Connector", function () {
             const daiBalanceBefore = await daiToken.balanceOf(account);
             const ethBalanceBefore = await ethers.provider.getBalance(account);
 
-            await kyberConnector.connect(account).swapTokens(ETH, DAI, amount, 5, {value: amount});
+            await kyberConnector.connect(account).swapTokens(ETH, DAI, account.address, amount, 5, {value: amount});
         
             const daiBalanceAfter = await daiToken.balanceOf(account);
             const ethBalanceAfter = await ethers.provider.getBalance(account);
@@ -124,7 +124,7 @@ describe("Kyber Connector", function () {
             const daiBalanceBefore = await daiToken.balanceOf(account);
             const ethBalanceBefore = await ethers.provider.getBalance(account);
 
-            await kyberConnector.connect(account).swapTokens(DAI, ETH, amount, 5);
+            await kyberConnector.connect(account).swapTokens(DAI, ETH, account, amount, 5);
         
             const daiBalanceAfter = await daiToken.balanceOf(account);
             const ethBalanceAfter = await ethers.provider.getBalance(account);
@@ -136,21 +136,21 @@ describe("Kyber Connector", function () {
         it("Should Not Swap Tokens When Identical Tokens", async function () {
             const kyberConnector = await loadFixture(deployKyberConnector);
             const [ account ] = await ethers.getSigners();
-            await expect(kyberConnector.connect(account).swapTokens(DAI, DAI, amount, 5))
+            await expect(kyberConnector.connect(account).swapTokens(DAI, DAI, account.address, amount, 5))
                 .revertedWithCustomError(kyberConnector, "IdenticalTokens");
         });
 
         it("Should Not Swap Eth For Tokens With Different Value And Amount", async function () {
             const kyberConnector = await loadFixture(deployKyberConnector);
             const [ account ] = await ethers.getSigners();
-            await expect(kyberConnector.connect(account).swapTokens(ETH, DAI, 1, 5, {value: amount}))
+            await expect(kyberConnector.connect(account).swapTokens(ETH, DAI, account.address, 1, 5, {value: amount}))
                 .revertedWithCustomError(kyberConnector, "ReceivedDifferentEthValueAndAmount");
         });
 
         it("Should Not Swap Eth For Tokens With Zero Value", async function () {
             const kyberConnector = await loadFixture(deployKyberConnector);
             const [ account ] = await ethers.getSigners();
-            await expect(kyberConnector.connect(account).swapTokens(ETH, DAI, 0, 5, {value: 0}))
+            await expect(kyberConnector.connect(account).swapTokens(ETH, DAI, account.address, 0, 5, {value: 0}))
                 .revertedWithCustomError(kyberConnector, "MissingEthValue");
         });
     });

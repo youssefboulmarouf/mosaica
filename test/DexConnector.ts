@@ -1,25 +1,14 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import * as testUtils from "./TestUtils";
 
 describe("Dex Connector", function () {
-
-    async function deployMosaicaLib() {    
-        const MosaicaLib = await ethers.getContractFactory("MosaicaLib");
-        const mosaicaLib = await MosaicaLib.deploy();
-        await mosaicaLib.waitForDeployment();
-
-        return { mosaicaLib };
-    }
 
     async function deployRandomConnectorContract() {
         const [owner, otherAccount] = await ethers.getSigners();
         const randomDexAddress = ethers.Wallet.createRandom();
-        const { mosaicaLib } = await deployMosaicaLib();
-
-        const UniswapV2LikeConnector = await ethers.getContractFactory("UniswapV2LikeConnector", {libraries: {MosaicaLib: await mosaicaLib.getAddress()}});
-        const uniswapV2LikeConnector = await UniswapV2LikeConnector.deploy("Random Dex", randomDexAddress.address);
-        await uniswapV2LikeConnector.waitForDeployment();
+        const uniswapV2LikeConnector = await testUtils.deployUniswapV2LikeConnectorContract("Random Dex", randomDexAddress.address);
 
         return { uniswapV2LikeConnector, randomDexAddress, owner, otherAccount };
     }

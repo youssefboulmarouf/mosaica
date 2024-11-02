@@ -1,107 +1,49 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-
-const UNISWAP_V2_ROUTER = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-
-const ETH = ethers.getAddress("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
-const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-const UNI = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
-const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-const WETH_WHALE = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-
-async function deployMosaicaLib() {    
-    const MosaicaLib = await ethers.getContractFactory("MosaicaLib");
-    const mosaicaLib = await MosaicaLib.deploy();
-    await mosaicaLib.waitForDeployment();
-
-    return mosaicaLib;
-}
-
-async function deployUniswapV2LikeConnector() {
-    const mosaicaLib = await deployMosaicaLib();
-
-    const UniswapV2LikeConnector = await ethers.getContractFactory(
-        "UniswapV2LikeConnector", 
-        { libraries: { MosaicaLib: await mosaicaLib.getAddress() } }
-    );
-    const uniswapV2LikeConnector = await UniswapV2LikeConnector.deploy("Uniswap V2", UNISWAP_V2_ROUTER);
-    await uniswapV2LikeConnector.waitForDeployment();
-
-    return { uniswapV2LikeConnector, mosaicaLib};
-}
-
-async function deployPortfolioFactory() {
-    const [owner, otherAccount] = await ethers.getSigners();
-    const { uniswapV2LikeConnector, mosaicaLib} = await deployUniswapV2LikeConnector();
-
-    const PortfolioFactory = await ethers.getContractFactory(
-        "PortfolioFactory",
-        { libraries: { MosaicaLib: await mosaicaLib.getAddress() } }
-    );
-    const portfolioFactory = await PortfolioFactory.deploy();
-    await portfolioFactory.waitForDeployment();
-
-    return { portfolioFactory, uniswapV2LikeConnector, mosaicaLib, owner, otherAccount };
-}
+import * as testUtils from "./TestUtils";
 
 async function createEmptyPortfolio() {
-    const { portfolioFactory, uniswapV2LikeConnector, mosaicaLib, owner, otherAccount } = await deployPortfolioFactory();
+    const [owner, otherAccount] = await ethers.getSigners();
+    const portfolioFactory = await testUtils.deployPortfolioFactory();
+    
     await portfolioFactory.createPortfolio([]);
     const porfolios = await portfolioFactory.getPortfolios(owner.address);
 
-    return { portfolioFactory, uniswapV2LikeConnector, mosaicaLib, owner, otherAccount, porfolios };
+    return { portfolioFactory, owner, otherAccount, porfolios };
 }
 
 async function createPortfolioWithAssets() {
-    const { portfolioFactory, uniswapV2LikeConnector, mosaicaLib, owner, otherAccount } = await deployPortfolioFactory();
-    const uniswapConnectorAddress = await uniswapV2LikeConnector.getAddress();
+    const [owner, otherAccount] = await ethers.getSigners();
+    const portfolioFactory = await testUtils.deployPortfolioFactory();
+    const uniswapConnectorAddress = await testUtils.getUniswapConnectorAddress();
 
     const params = [
         {
-            srcToken: ETH,
+            srcToken: testUtils.addresses.ETH,
             dexConnectorAddress: uniswapConnectorAddress,
-            destToken: DAI,
+            destToken: testUtils.addresses.DAI,
             amount: ethers.parseEther("0.5"),
             slippage: 5
         },
         {
-            srcToken: ETH,
+            srcToken: testUtils.addresses.ETH,
             dexConnectorAddress: uniswapConnectorAddress,
-            destToken: UNI,
+            destToken: testUtils.addresses.UNI,
             amount: ethers.parseEther("2"),
             slippage: 5
         },
         {
-            srcToken: ETH,
+            srcToken: testUtils.addresses.ETH,
             dexConnectorAddress: uniswapConnectorAddress,
-            destToken: USDC,
+            destToken: testUtils.addresses.USDC,
             amount: ethers.parseEther("1"),
             slippage: 5
         }
     ];
 
     await portfolioFactory.createPortfolio(params, {value: ethers.parseEther("3.5")});
-    const porfolios = await portfolioFactory.getPortfolios(owner.address);
-
-    return { portfolioFactory, uniswapV2LikeConnector, mosaicaLib, owner, otherAccount };
-}
-
-async function fundAccountWithToken(spender: string, account: HardhatEthersSigner, token: string, whale: string, amount: bigint) {
-    const ercToken = await ethers.getContractAt("IERC20", token);
-
-    await ethers.provider.send("hardhat_impersonateAccount", [whale]); 
-    const whaleSigner = await ethers.getSigner(whale);
-    
-    await ercToken.connect(whaleSigner).transfer(account, amount);
-    await ercToken.connect(account).approve(spender, amount);
-}
-
-async function getErc20Balance(erc20Address: string, account: string) {
-    const ercToken = await ethers.getContractAt("ERC20", erc20Address);
-    return await ercToken.balanceOf(account);
+    return { portfolioFactory, uniswapConnectorAddress, owner, otherAccount };
 }
 
 describe("Portfolio", function () {
@@ -113,18 +55,17 @@ describe("Portfolio", function () {
             let assetAddresses = await porfolioContract.getAssetAddresses();
             expect(assetAddresses.length).equals(0);
 
-            await fundAccountWithToken(porfolios[0], owner, WETH, WETH_WHALE, ethers.parseEther("2"));
-            await porfolioContract.addAsset(WETH, ethers.parseEther("2"));
+            await testUtils.fundAccountWithToken(porfolios[0], owner, testUtils.addresses.WETH, testUtils.addresses.WETH_WHALE, ethers.parseEther("2"));
+            await porfolioContract.addAsset(testUtils.addresses.WETH, ethers.parseEther("2"));
             
             assetAddresses = await porfolioContract.getAssetAddresses();
             expect(assetAddresses.length).equals(1);
-            expect(assetAddresses).contain(WETH);
+            expect(assetAddresses).contain(testUtils.addresses.WETH);
 
-            const portfolioWethBalance = await porfolioContract.getAssetBalance(WETH);
+            const portfolioWethBalance = await porfolioContract.getAssetBalance(testUtils.addresses.WETH);
             expect(portfolioWethBalance).equals(ethers.parseEther("2"));
 
-            const wethToken = await ethers.getContractAt("IERC20", WETH);
-            const wethBalance = await wethToken.balanceOf(porfolios[0]);
+            const wethBalance = await testUtils.getErc20Balance(testUtils.addresses.WETH, porfolios[0]);
             expect(wethBalance).equals(portfolioWethBalance);
         });
 
@@ -135,13 +76,13 @@ describe("Portfolio", function () {
             let assetAddresses = await porfolioContract.getAssetAddresses();
             expect(assetAddresses.length).equals(0);
 
-            await porfolioContract.addAsset(ETH, ethers.parseEther("2"), {value: ethers.parseEther("2")});
+            await porfolioContract.addAsset(testUtils.addresses.ETH, ethers.parseEther("2"), {value: ethers.parseEther("2")});
             
             assetAddresses = await porfolioContract.getAssetAddresses();
             expect(assetAddresses.length).equals(1);
-            expect(assetAddresses).contain(ETH);
+            expect(assetAddresses).contain(testUtils.addresses.ETH);
 
-            const portfolioEthBalance = await porfolioContract.getAssetBalance(ETH);
+            const portfolioEthBalance = await porfolioContract.getAssetBalance(testUtils.addresses.ETH);
             expect(portfolioEthBalance).equals(ethers.parseEther("2"));
 
             const ethBalance = await ethers.provider.getBalance(porfolios[0]);
@@ -152,7 +93,7 @@ describe("Portfolio", function () {
             const { otherAccount, porfolios } = await loadFixture(createEmptyPortfolio);
 
             const porfolioContract = await ethers.getContractAt("Portfolio", porfolios[0]);
-            await expect(porfolioContract.connect(otherAccount).addAsset(ETH, ethers.parseEther("2"), {value: ethers.parseEther("2")}))
+            await expect(porfolioContract.connect(otherAccount).addAsset(testUtils.addresses.ETH, ethers.parseEther("2"), {value: ethers.parseEther("2")}))
                 .revertedWithCustomError(porfolioContract, "OwnableUnauthorizedAccount")
             
         });
@@ -161,7 +102,7 @@ describe("Portfolio", function () {
             const { porfolios } = await loadFixture(createEmptyPortfolio);
 
             const porfolioContract = await ethers.getContractAt("Portfolio", porfolios[0]);
-            await expect(porfolioContract.addAsset(ETH, 0, {value: ethers.parseEther("2")}))
+            await expect(porfolioContract.addAsset(testUtils.addresses.ETH, 0, {value: ethers.parseEther("2")}))
                 .revertedWithCustomError(porfolioContract, "ReceivedDifferentEthValueAndAmount");
         });
 
@@ -169,42 +110,42 @@ describe("Portfolio", function () {
             const { porfolios } = await loadFixture(createEmptyPortfolio);
 
             const porfolioContract = await ethers.getContractAt("Portfolio", porfolios[0]);
-            await expect(porfolioContract.addAsset(WETH, ethers.parseEther("2")))
+            await expect(porfolioContract.addAsset(testUtils.addresses.WETH, ethers.parseEther("2")))
                 .revertedWithCustomError(porfolioContract, "NotEnoughBalance")
-                .withArgs(WETH);
+                .withArgs(testUtils.addresses.WETH);
         });
     });
 
     describe("Buy Assets", function () {
         it("Should Buy Token Assets", async function () {
-            const { uniswapV2LikeConnector, owner, porfolios } = await loadFixture(createEmptyPortfolio);
+            const { owner, porfolios } = await loadFixture(createEmptyPortfolio);
+            const uniswapConnectorAddress = await testUtils.getUniswapConnectorAddress();
             
             const porfolioContract = await ethers.getContractAt("Portfolio", porfolios[0]);
             let assetAddresses = await porfolioContract.getAssetAddresses();
             expect(assetAddresses.length).equals(0);
 
-            await fundAccountWithToken(porfolios[0], owner, WETH, WETH_WHALE, ethers.parseEther("3"));
-            const uniswapConnectorAddress = await uniswapV2LikeConnector.getAddress();
+            await testUtils.fundAccountWithToken(porfolios[0], owner, testUtils.addresses.WETH, testUtils.addresses.WETH_WHALE, ethers.parseEther("3"));
 
             const params = [
                 {
-                    srcToken: ETH,
+                    srcToken: testUtils.addresses.ETH,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: DAI,
+                    destToken: testUtils.addresses.DAI,
                     amount: ethers.parseEther("0.5"),
                     slippage: 5
                 },
                 {
-                    srcToken: WETH,
+                    srcToken: testUtils.addresses.WETH,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: UNI,
+                    destToken: testUtils.addresses.UNI,
                     amount: ethers.parseEther("2"),
                     slippage: 5
                 },
                 {
-                    srcToken: ETH,
+                    srcToken: testUtils.addresses.ETH,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: USDC,
+                    destToken: testUtils.addresses.USDC,
                     amount: ethers.parseEther("1"),
                     slippage: 5
                 }
@@ -214,28 +155,24 @@ describe("Portfolio", function () {
             
             assetAddresses = await porfolioContract.getAssetAddresses();
             expect(assetAddresses.length).equals(4);
-            expect(assetAddresses).contain(DAI);
-            expect(assetAddresses).contain(UNI);
-            expect(assetAddresses).contain(USDC);
-            expect(assetAddresses).contain(ETH);
+            expect(assetAddresses).contain(testUtils.addresses.DAI);
+            expect(assetAddresses).contain(testUtils.addresses.UNI);
+            expect(assetAddresses).contain(testUtils.addresses.USDC);
+            expect(assetAddresses).contain(testUtils.addresses.ETH);
 
-            const daiToken = await ethers.getContractAt("IERC20", DAI);
-            const daiBalance = await daiToken.balanceOf(porfolios[0]);
+            const daiBalance = await testUtils.getErc20Balance(testUtils.addresses.DAI, porfolios[0]);
             expect(daiBalance).greaterThan(0);
 
-            const uniToken = await ethers.getContractAt("IERC20", UNI);
-            const uniBalance = await uniToken.balanceOf(porfolios[0]);
+            const uniBalance = await testUtils.getErc20Balance(testUtils.addresses.UNI, porfolios[0]);
             expect(uniBalance).greaterThan(0);
 
-            const usdcToken = await ethers.getContractAt("IERC20", USDC);
-            const usdcBalance = await usdcToken.balanceOf(porfolios[0]);
+            const usdcBalance = await testUtils.getErc20Balance(testUtils.addresses.USDC, porfolios[0]);
             expect(usdcBalance).greaterThan(0);
 
             const ethBalance = await ethers.provider.getBalance(porfolios[0]);
             expect(ethBalance).equals(ethers.parseEther("0.5"));
 
-            const wethToken = await ethers.getContractAt("IERC20", WETH);
-            const wethBalance = await wethToken.balanceOf(porfolios[0]);
+            const wethBalance = await testUtils.getErc20Balance(testUtils.addresses.WETH, porfolios[0]);
             expect(wethBalance).equals(0);
         });
 
@@ -248,21 +185,21 @@ describe("Portfolio", function () {
         });
 
         it("Should Not Buy Assets When Not Enough Eth Balance", async function () {
-            const { uniswapV2LikeConnector, porfolios } = await loadFixture(createEmptyPortfolio);
-            const uniswapConnectorAddress = await uniswapV2LikeConnector.getAddress();
+            const { porfolios } = await loadFixture(createEmptyPortfolio);
+            const uniswapConnectorAddress = await testUtils.getUniswapConnectorAddress();
 
             const params = [
                 {
-                    srcToken: ETH,
+                    srcToken: testUtils.addresses.ETH,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: DAI,
+                    destToken: testUtils.addresses.DAI,
                     amount: ethers.parseEther("0.5"),
                     slippage: 5
                 },
                 {
-                    srcToken: ETH,
+                    srcToken: testUtils.addresses.ETH,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: USDC,
+                    destToken: testUtils.addresses.USDC,
                     amount: ethers.parseEther("1"),
                     slippage: 5
                 }
@@ -274,21 +211,21 @@ describe("Portfolio", function () {
         });
 
         it("Should Not Buy Assets When Not Enough Token Balance", async function () {
-            const { uniswapV2LikeConnector, porfolios } = await loadFixture(createEmptyPortfolio);
-            const uniswapConnectorAddress = await uniswapV2LikeConnector.getAddress();
+            const { porfolios } = await loadFixture(createEmptyPortfolio);
+            const uniswapConnectorAddress = await testUtils.getUniswapConnectorAddress();
 
             const params = [
                 {
-                    srcToken: WETH,
+                    srcToken: testUtils.addresses.WETH,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: DAI,
+                    destToken: testUtils.addresses.DAI,
                     amount: ethers.parseEther("0.5"),
                     slippage: 5
                 },
                 {
-                    srcToken: WETH,
+                    srcToken: testUtils.addresses.WETH,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: USDC,
+                    destToken: testUtils.addresses.USDC,
                     amount: ethers.parseEther("1"),
                     slippage: 5
                 }
@@ -297,45 +234,44 @@ describe("Portfolio", function () {
             const porfolioContract = await ethers.getContractAt("Portfolio", porfolios[0]);
             await expect(porfolioContract.buyAssets(params))
                 .revertedWithCustomError(porfolioContract, "NotEnoughBalance")
-                .withArgs(WETH);
+                .withArgs(testUtils.addresses.WETH);
         });
     });
 
     describe("Withdraw Assets", function () {
         it("Should Withdraw Assets As Tokens", async function () {
-            const { portfolioFactory, uniswapV2LikeConnector, owner } = await loadFixture(createPortfolioWithAssets);
-            const uniswapConnectorAddress = await uniswapV2LikeConnector.getAddress();
+            const { portfolioFactory, uniswapConnectorAddress, owner } = await loadFixture(createPortfolioWithAssets);
 
             const porfolios = await portfolioFactory.getPortfolios(owner.address);
             const porfolioContract = await ethers.getContractAt("Portfolio", porfolios[0]);
             
-            const ownerDaiBalance = await getErc20Balance(DAI, owner.address);
-            const ownerUniBalance = await getErc20Balance(UNI, owner.address);
-            const ownerUsdcBalance = await getErc20Balance(USDC, owner.address);
+            const ownerDaiBalance = await testUtils.getErc20Balance(testUtils.addresses.DAI, owner.address);
+            const ownerUniBalance = await testUtils.getErc20Balance(testUtils.addresses.UNI, owner.address);
+            const ownerUsdcBalance = await testUtils.getErc20Balance(testUtils.addresses.USDC, owner.address);
 
-            const portfolioDaiBalance = await porfolioContract.getAssetBalance(DAI);
-            const portfolioUniBalance = await porfolioContract.getAssetBalance(UNI);
-            const portfolioUsdcBalance = await porfolioContract.getAssetBalance(USDC);
+            const portfolioDaiBalance = await porfolioContract.getAssetBalance(testUtils.addresses.DAI);
+            const portfolioUniBalance = await porfolioContract.getAssetBalance(testUtils.addresses.UNI);
+            const portfolioUsdcBalance = await porfolioContract.getAssetBalance(testUtils.addresses.USDC);
 
             const params = [
                 {
-                    srcToken: DAI,
+                    srcToken: testUtils.addresses.DAI,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: DAI,
+                    destToken: testUtils.addresses.DAI,
                     amount: portfolioDaiBalance,
                     slippage: 5
                 },
                 {
-                    srcToken: UNI,
+                    srcToken: testUtils.addresses.UNI,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: UNI,
+                    destToken: testUtils.addresses.UNI,
                     amount: portfolioUniBalance,
                     slippage: 5
                 },
                 {
-                    srcToken: USDC,
+                    srcToken: testUtils.addresses.USDC,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: USDC,
+                    destToken: testUtils.addresses.USDC,
                     amount: portfolioUsdcBalance,
                     slippage: 5
                 }
@@ -343,48 +279,47 @@ describe("Portfolio", function () {
 
             await porfolioContract.withdrawAssets(params);
 
-            const ownerDaiBalanceAfter = await getErc20Balance(DAI, owner.address);
+            const ownerDaiBalanceAfter = await testUtils.getErc20Balance(testUtils.addresses.DAI, owner.address);
             expect(ownerDaiBalanceAfter).equals(ownerDaiBalance + portfolioDaiBalance);
 
-            const ownerUniBalanceAfter = await getErc20Balance(UNI, owner.address);
+            const ownerUniBalanceAfter = await testUtils.getErc20Balance(testUtils.addresses.UNI, owner.address);
             expect(ownerUniBalanceAfter).equals(ownerUniBalance + portfolioUniBalance);
 
-            const ownerUsdcBalanceAfter = await getErc20Balance(USDC, owner.address);
+            const ownerUsdcBalanceAfter = await testUtils.getErc20Balance(testUtils.addresses.USDC, owner.address);
             expect(ownerUsdcBalanceAfter).equals(ownerUsdcBalance + portfolioUsdcBalance);
         });
 
         it("Should Withdraw Assets As ETH", async function () {
-            const { portfolioFactory, uniswapV2LikeConnector, owner } = await loadFixture(createPortfolioWithAssets);
-            const uniswapConnectorAddress = await uniswapV2LikeConnector.getAddress();
+            const { portfolioFactory, uniswapConnectorAddress, owner } = await loadFixture(createPortfolioWithAssets);
 
             const porfolios = await portfolioFactory.getPortfolios(owner.address);
             const porfolioContract = await ethers.getContractAt("Portfolio", porfolios[0]);
             
             const ethBalance = await ethers.provider.getBalance(owner);
 
-            const portfolioDaiBalance = await porfolioContract.getAssetBalance(DAI);
-            const portfolioUniBalance = await porfolioContract.getAssetBalance(UNI);
-            const portfolioUsdcBalance = await porfolioContract.getAssetBalance(USDC);
+            const portfolioDaiBalance = await porfolioContract.getAssetBalance(testUtils.addresses.DAI);
+            const portfolioUniBalance = await porfolioContract.getAssetBalance(testUtils.addresses.UNI);
+            const portfolioUsdcBalance = await porfolioContract.getAssetBalance(testUtils.addresses.USDC);
 
             const params = [
                 {
-                    srcToken: DAI,
+                    srcToken: testUtils.addresses.DAI,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: ETH,
+                    destToken: testUtils.addresses.ETH,
                     amount: portfolioDaiBalance,
                     slippage: 5
                 },
                 {
-                    srcToken: UNI,
+                    srcToken: testUtils.addresses.UNI,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: ETH,
+                    destToken: testUtils.addresses.ETH,
                     amount: portfolioUniBalance,
                     slippage: 5
                 },
                 {
-                    srcToken: USDC,
+                    srcToken: testUtils.addresses.USDC,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: ETH,
+                    destToken: testUtils.addresses.ETH,
                     amount: portfolioUsdcBalance,
                     slippage: 5
                 }
@@ -406,19 +341,18 @@ describe("Portfolio", function () {
         });
 
         it("Should Withdraw Assets As Tokens", async function () {
-            const { portfolioFactory, uniswapV2LikeConnector, owner } = await loadFixture(createPortfolioWithAssets);
-            const uniswapConnectorAddress = await uniswapV2LikeConnector.getAddress();
+            const { portfolioFactory, uniswapConnectorAddress, owner } = await loadFixture(createPortfolioWithAssets);
 
             const porfolios = await portfolioFactory.getPortfolios(owner.address);
             const porfolioContract = await ethers.getContractAt("Portfolio", porfolios[0]);
 
-            const daiBalance = await porfolioContract.getAssetBalance(DAI);
+            const daiBalance = await porfolioContract.getAssetBalance(testUtils.addresses.DAI);
 
             const params = [
                 {
-                    srcToken: DAI,
+                    srcToken: testUtils.addresses.DAI,
                     dexConnectorAddress: uniswapConnectorAddress,
-                    destToken: DAI,
+                    destToken: testUtils.addresses.DAI,
                     amount: daiBalance + BigInt(1),
                     slippage: 5
                 }
@@ -426,7 +360,7 @@ describe("Portfolio", function () {
 
             await expect(porfolioContract.withdrawAssets(params))
                 .revertedWithCustomError(porfolioContract, "NotEnoughBalance")
-                .withArgs(DAI);
+                .withArgs(testUtils.addresses.DAI);
 
         });
     });

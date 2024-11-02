@@ -1,36 +1,15 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import * as testUtils from "./TestUtils";
 
 describe("Dex Connector Storage", function () {
 
-    async function deployDexConnectorStorage() {
-        const [owner, otherAccount] = await ethers.getSigners();
-    
-        const DexConnectorStorage = await ethers.getContractFactory("DexConnectorStorage");
-        const dexConnectorStorage = await DexConnectorStorage.deploy();
-        await dexConnectorStorage.waitForDeployment();
-
-        return { dexConnectorStorage, owner, otherAccount };
-    }
-
-    async function deployMosaicaLib() {    
-        const MosaicaLib = await ethers.getContractFactory("MosaicaLib");
-        const mosaicaLib = await MosaicaLib.deploy();
-        await mosaicaLib.waitForDeployment();
-
-        return { mosaicaLib };
-    }
-
     async function AddRandomConnectorContract() {
-        const { dexConnectorStorage, owner, otherAccount } = await deployDexConnectorStorage();
-        const { mosaicaLib } = await deployMosaicaLib();
-
         const randomDexAddress = ethers.Wallet.createRandom();
-        
-        const UniswapV2LikeConnector = await ethers.getContractFactory("UniswapV2LikeConnector", {libraries: {MosaicaLib: await mosaicaLib.getAddress()}});
-        const uniswapV2LikeConnector = await UniswapV2LikeConnector.deploy("Random Dex", randomDexAddress.address);
-        await uniswapV2LikeConnector.waitForDeployment();
+        const [owner, otherAccount] = await ethers.getSigners();
+        const dexConnectorStorage = await testUtils.deployDexConnectorStorage();
+        const uniswapV2LikeConnector = await testUtils.deployUniswapV2LikeConnectorContract("Random Dex", randomDexAddress.address);
 
         await dexConnectorStorage.addConnectorContract(await uniswapV2LikeConnector.getAddress());
 
@@ -39,14 +18,8 @@ describe("Dex Connector Storage", function () {
 
     describe("Add Connector Contract", function () {
         it("Should Add Connector Contract", async function () {
-            const { dexConnectorStorage } = await loadFixture(deployDexConnectorStorage);
-            const { mosaicaLib } = await deployMosaicaLib();
-
-            const randomAddress = ethers.Wallet.createRandom();
-
-            const UniswapV2LikeConnector = await ethers.getContractFactory("UniswapV2LikeConnector", {libraries: {MosaicaLib: await mosaicaLib.getAddress()}});
-            const uniswapV2LikeConnector = await UniswapV2LikeConnector.deploy("Random Dex", randomAddress.address);
-            await uniswapV2LikeConnector.waitForDeployment();
+            const dexConnectorStorage = await loadFixture(testUtils.deployDexConnectorStorage);
+            const uniswapV2LikeConnector = await testUtils.deployUniswapV2LikeConnectorContract("Random Dex", ethers.Wallet.createRandom().address);
 
             await expect(dexConnectorStorage.addConnectorContract(await uniswapV2LikeConnector.getAddress()))
                 .emit(dexConnectorStorage, "DexConnectorAddedEvent")
@@ -66,16 +39,15 @@ describe("Dex Connector Storage", function () {
         });
 
         it("Should Not Add Connector Contract When Not Owner", async function () {
-            const { dexConnectorStorage, otherAccount } = await loadFixture(deployDexConnectorStorage);
-            const randomAddress = ethers.Wallet.createRandom();
+            const { dexConnectorStorage, otherAccount } = await loadFixture(AddRandomConnectorContract);
             
-            await expect(dexConnectorStorage.connect(otherAccount).addConnectorContract(randomAddress.address))
+            await expect(dexConnectorStorage.connect(otherAccount).addConnectorContract(ethers.Wallet.createRandom().address))
                 .revertedWithCustomError(dexConnectorStorage, "OwnableUnauthorizedAccount")
                 .withArgs(otherAccount);
         });
 
         it("Should Not Add Connector Contract With Invalid Address", async function () {
-            const { dexConnectorStorage } = await loadFixture(deployDexConnectorStorage);
+            const { dexConnectorStorage } = await loadFixture(AddRandomConnectorContract);
             
             await expect(dexConnectorStorage.addConnectorContract(ethers.ZeroAddress))
                 .revertedWithCustomError(dexConnectorStorage, "InvalidAddressError");
@@ -106,9 +78,9 @@ describe("Dex Connector Storage", function () {
         });
 
         it("Should Not Remove Connector Contract When Not Owner", async function () {
-            const { dexConnectorStorage, randomDexAddress, otherAccount } = await loadFixture(AddRandomConnectorContract);
+            const { dexConnectorStorage, otherAccount } = await loadFixture(AddRandomConnectorContract);
             
-            await expect(dexConnectorStorage.connect(otherAccount).removeConnectorContract(randomDexAddress.address))
+            await expect(dexConnectorStorage.connect(otherAccount).removeConnectorContract(ethers.Wallet.createRandom().address))
                 .revertedWithCustomError(dexConnectorStorage, "OwnableUnauthorizedAccount")
                 .withArgs(otherAccount);
         });

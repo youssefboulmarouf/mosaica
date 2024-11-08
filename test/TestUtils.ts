@@ -1,5 +1,6 @@
 import { ethers } from "hardhat";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import * as Contracts from "../typechain-types";
 
 export const addresses = {
     UNISWAP_V2_ROUTER: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
@@ -13,15 +14,15 @@ export const addresses = {
     DAI_WHALE: "0x28C6c06298d514Db089934071355E5743bf21d60",
 }
 
-export async function deployContract(name: string) {    
-    const Contract = await ethers.getContractFactory(name);
+export async function deployMosaicaLib(): Promise<Contracts.MosaicaLib> {
+    const Contract = await ethers.getContractFactory("MosaicaLib");
     const contract = await Contract.deploy();
     await contract.waitForDeployment();
 
     return contract;
 }
 
-export async function deployDexConnectorStorage() {
+export async function deployDexConnectorStorage(): Promise<Contracts.DexConnectorStorage> {
     const DexConnectorStorage = await ethers.getContractFactory("DexConnectorStorage");
     const dexConnectorStorage = await DexConnectorStorage.deploy();
     await dexConnectorStorage.waitForDeployment();
@@ -29,8 +30,8 @@ export async function deployDexConnectorStorage() {
     return dexConnectorStorage;
 }
 
-export async function deployUniswapV2LikeConnectorContract(name: string, address: string) {
-    const mosaicaLib = await deployContract("MosaicaLib");
+export async function deployUniswapV2LikeConnectorContract(name: string, address: string): Promise<Contracts.UniswapV2LikeConnector> {
+    const mosaicaLib = await deployMosaicaLib();
 
     const UniswapV2LikeConnector = await ethers.getContractFactory("UniswapV2LikeConnector", {libraries: {MosaicaLib: await mosaicaLib.getAddress()}});
     const uniswapV2LikeConnector = await UniswapV2LikeConnector.deploy(name, address);
@@ -39,8 +40,8 @@ export async function deployUniswapV2LikeConnectorContract(name: string, address
     return uniswapV2LikeConnector;
 }
 
-export async function deployKyberConnector() {
-    const mosaicaLib = await deployContract("MosaicaLib");
+export async function deployKyberConnector(): Promise<Contracts.KyberConnector> {
+    const mosaicaLib = await deployMosaicaLib();
 
     const KyberConnector = await ethers.getContractFactory("KyberConnector", {libraries: {MosaicaLib: await mosaicaLib.getAddress()}});
     const kyberConnector = await KyberConnector.deploy(addresses.KYBER_PROXY_NETWORK);
@@ -49,7 +50,7 @@ export async function deployKyberConnector() {
     return kyberConnector;
 }
 
-export async function getErc20Balance(tokenAddress: string, account: string) {
+export async function getErc20Balance(tokenAddress: string, account: string): Promise<bigint> {
     const token = await ethers.getContractAt("IERC20", tokenAddress);
     return await token.balanceOf(account);
 }
@@ -64,8 +65,8 @@ export async function fundAccountWithToken(spender: string, account: HardhatEthe
     await ercToken.connect(account).approve(spender, amount);
 }
 
-export async function deployPortfolioFactory() {
-    const mosaicaLib = await deployContract("MosaicaLib");
+export async function deployPortfolioFactory(): Promise<Contracts.PortfolioFactory> {
+    const mosaicaLib = await deployMosaicaLib();
     const PortfolioFactory = await ethers.getContractFactory("PortfolioFactory", {libraries: { MosaicaLib: await mosaicaLib.getAddress()}});
     const portfolioFactory = await PortfolioFactory.deploy();
     await portfolioFactory.waitForDeployment();
@@ -73,7 +74,7 @@ export async function deployPortfolioFactory() {
     return portfolioFactory;
 }
 
-export async function getUniswapConnectorAddress() {
+export async function getUniswapConnectorAddress(): Promise<string> {
     const uniswapV2LikeConnector = await deployUniswapV2LikeConnectorContract("Uniswap V2", addresses.UNISWAP_V2_ROUTER)
     return await uniswapV2LikeConnector.getAddress();
 }

@@ -22,4 +22,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-/src/contract-addresses.json
+/src/data/contract-addresses.json
+/src/artifacts

@@ -1,5 +1,4 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
-import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import * as testUtils from "./TestUtils";

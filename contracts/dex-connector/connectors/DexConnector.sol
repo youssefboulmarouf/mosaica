@@ -128,8 +128,8 @@ abstract contract DexConnector is Ownable {
     function swapTokens(address srcToken, address destToken, address to, uint256 amount, uint256 slippage) 
         external payable 
         differentTokens(srcToken, destToken) equalsEthValueAndAmount(srcToken, amount) positiveEthValue(srcToken)
+        returns(uint256 destAmount)
         {
-            uint256 destAmount;
             if (MosaicaLib.isEth(srcToken)) {
                 destAmount = swapEthForTokens(destToken, to, amount, slippage);
             } else if (MosaicaLib.isEth(destToken)) {

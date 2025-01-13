@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Portfolio} from "./Portfolio.sol";
 import {MosaicaLib} from "../MosaicaUtils.sol";
-
+import "hardhat/console.sol";
 /**
  * @title PortfolioFactory
  * @dev A contract that allows users to create and manage individual portfolios of assets.
@@ -43,6 +43,7 @@ contract PortfolioFactory is Ownable {
         external payable 
         enoughEthValue(params) enoughTokenBalance(params)
         {
+            console.log("PortfolioFactory: createPortfolio");
             address[] storage portfoliosList = portfolios[msg.sender];
             Portfolio newPortfolio = new Portfolio(address(this), msg.sender);
             portfoliosList.push(address(newPortfolio));
@@ -50,13 +51,36 @@ contract PortfolioFactory is Ownable {
 
             // Transfer specified assets to the new portfolio
             for (uint i; i < params.length; i++) {
+                console.log("PortfolioFactory: srcToken : ", params[i].srcToken);
+                console.log("PortfolioFactory: amount : ", params[i].amount);
                 if (!MosaicaLib.isEth(params[i].srcToken)) {
-                    IERC20(params[i].srcToken).safeTransferFrom(owner(), address(newPortfolio), params[i].amount);
+                    console.log("PortfolioFactory: allowance");
+                    uint256 allowance = IERC20(params[i].srcToken).allowance(msg.sender, address(this));
+                    console.log("PortfolioFactory: allowance : ", allowance);
+                    console.log("PortfolioFactory: safeTransferFrom");
+                    IERC20(params[i].srcToken).safeTransferFrom(msg.sender, address(newPortfolio), params[i].amount);
+                    console.log("PortfolioFactory: End safeTransferFrom");
                 }
             }
         
             newPortfolio.buyAssets{value: msg.value}(params);
-            emit MosaicaLib.PortfolioCreated(address(newPortfolio), owner());
+            emit MosaicaLib.PortfolioCreated(address(newPortfolio), msg.sender, block.timestamp);
+        }
+
+    function deletePortfolio(address portfolioAddress) 
+        external 
+        portfolioExist(portfolioAddress) emptyProtfolio(portfolioAddress)
+        {
+            address[] storage portfoliosAddresses = portfolios[msg.sender];
+            uint256 length = portfoliosAddresses.length;
+
+            for (uint256 i = 0; i < length; i++) {
+                if (portfoliosAddresses[i] == portfolioAddress) {
+                    portfoliosAddresses[i] = portfoliosAddresses[length - 1];
+                    portfoliosAddresses.pop();
+                    return;
+                }
+            }
         }
 
     /**
@@ -90,6 +114,7 @@ contract PortfolioFactory is Ownable {
         }
 
         if (ethAmount > msg.value) {
+            console.log("PortfolioFactory: ReceivedDifferentEthValueAndAmount");
             revert MosaicaLib.ReceivedDifferentEthValueAndAmount();
         }
         _;
@@ -108,9 +133,36 @@ contract PortfolioFactory is Ownable {
             if (!MosaicaLib.isEth(params[i].srcToken)) {
                 uint256 balance = IERC20(params[i].srcToken).balanceOf(msg.sender);
                 if (params[i].amount > balance) {
+                    console.log("PortfolioFactory: NotEnoughBalance");
                     revert MosaicaLib.NotEnoughBalance(params[i].srcToken);
                 }
             }
+        }
+        _;
+    }
+
+    modifier portfolioExist(address portfolioAddress) {
+        address[] memory portfoliosAddresses = portfolios[msg.sender];
+        bool exists = false;
+
+        // Iterate through the portfoliosAddresses array
+        for (uint256 i = 0; i < portfoliosAddresses.length; i++) {
+            if (portfoliosAddresses[i] == portfolioAddress) {
+                exists = true;
+                break;
+            }
+        }
+
+        // Revert if the portfolioAddress does not exist
+        if (!exists) {
+            revert MosaicaLib.PortfolioDoesNotExists(portfolioAddress);
+        }
+        _;
+    }
+
+    modifier emptyProtfolio(address portfolioAddress) {
+        if (Portfolio(portfolioAddress).getAssetAddresses().length > 0) {
+            revert MosaicaLib.PortfolioNotEmpty(address(this));
         }
         _;
     }

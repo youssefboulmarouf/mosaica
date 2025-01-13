@@ -99,12 +99,40 @@ library MosaicaLib {
      */
     event TokenSwapEvent(address srcToken, address destToken, uint256 amount);
 
-     /**
+    /**
      * @dev Emitted when a new portfolio is created.
      * @param portfolioAddress The address of the newly created portfolio contract.
      * @param owner The address of the owner of the new portfolio.
+     * @param timestamp block timestamp.
      */
-    event PortfolioCreated(address portfolioAddress, address owner);
+    event PortfolioCreated(address indexed portfolioAddress, address owner, uint256 timestamp);
+
+    /**
+     * @dev Emitted when an asset is added to a portfolio.
+     * @param portfolioAddress The address of the portfolio contract.
+     * @param assetAddress The address of the added asset.
+     * @param amount The amount of the added asset.
+     * @param timestamp block timestamp.
+     */
+    event AddAsset(address indexed portfolioAddress, address assetAddress, uint256 amount, uint256 timestamp);
+
+    /**
+     * @dev Emitted when an asset is bought for a given portfolio.
+     * @param portfolioAddress The address of the portfolio contract.
+     * @param assetAddress The address of the bought asset.
+     * @param amount The amount of the bought asset.
+     * @param timestamp block timestamp.
+     */
+    event BuyAsset(address indexed portfolioAddress, address assetAddress, uint256 amount, uint256 timestamp);
+
+    /**
+     * @dev Emitted when an asset is withdrawn to owner wallet.
+     * @param portfolioAddress The address of the portfolio contract.
+     * @param assetAddress The address of the withdrawn asset.
+     * @param amount The amount of the withdrawn asset.
+     * @param timestamp block timestamp.
+     */
+    event WithdrawAsset(address indexed portfolioAddress, address assetAddress, uint256 amount, uint256 timestamp);
 
     // Errors
 
@@ -157,6 +185,10 @@ library MosaicaLib {
      * @dev Error indicating an invalid address, typically used for zero address checks.
      */
     error InvalidAddressError();
+
+    error PortfolioDoesNotExists(address portfolioAddress);
+
+    error PortfolioNotEmpty(address portfolioAddress);
 
     // Functions
 

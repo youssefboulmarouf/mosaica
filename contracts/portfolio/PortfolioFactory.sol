@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Portfolio} from "./Portfolio.sol";
 import {MosaicaLib} from "../MosaicaUtils.sol";
-import "hardhat/console.sol";
+
 /**
  * @title PortfolioFactory
  * @dev A contract that allows users to create and manage individual portfolios of assets.
@@ -43,7 +43,6 @@ contract PortfolioFactory is Ownable {
         external payable 
         enoughEthValue(params) enoughTokenBalance(params)
         {
-            console.log("PortfolioFactory: createPortfolio");
             address[] storage portfoliosList = portfolios[msg.sender];
             Portfolio newPortfolio = new Portfolio(address(this), msg.sender);
             portfoliosList.push(address(newPortfolio));
@@ -51,15 +50,8 @@ contract PortfolioFactory is Ownable {
 
             // Transfer specified assets to the new portfolio
             for (uint i; i < params.length; i++) {
-                console.log("PortfolioFactory: srcToken : ", params[i].srcToken);
-                console.log("PortfolioFactory: amount : ", params[i].amount);
                 if (!MosaicaLib.isEth(params[i].srcToken)) {
-                    console.log("PortfolioFactory: allowance");
-                    uint256 allowance = IERC20(params[i].srcToken).allowance(msg.sender, address(this));
-                    console.log("PortfolioFactory: allowance : ", allowance);
-                    console.log("PortfolioFactory: safeTransferFrom");
                     IERC20(params[i].srcToken).safeTransferFrom(msg.sender, address(newPortfolio), params[i].amount);
-                    console.log("PortfolioFactory: End safeTransferFrom");
                 }
             }
         
@@ -114,7 +106,6 @@ contract PortfolioFactory is Ownable {
         }
 
         if (ethAmount > msg.value) {
-            console.log("PortfolioFactory: ReceivedDifferentEthValueAndAmount");
             revert MosaicaLib.ReceivedDifferentEthValueAndAmount();
         }
         _;
@@ -133,7 +124,6 @@ contract PortfolioFactory is Ownable {
             if (!MosaicaLib.isEth(params[i].srcToken)) {
                 uint256 balance = IERC20(params[i].srcToken).balanceOf(msg.sender);
                 if (params[i].amount > balance) {
-                    console.log("PortfolioFactory: NotEnoughBalance");
                     revert MosaicaLib.NotEnoughBalance(params[i].srcToken);
                 }
             }

@@ -6,6 +6,7 @@ import * as Contracts from "../typechain-types";
 const addresses = {
     UNISWAP_V2_ROUTER: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
     SUSHISWAP_V2_ROUTER: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
+    PANCAKE_V2_ROUTER: "0xEfF92A263d31888d860bD50809A8D171709b7b1c",
     KYBER_PROXY_NETWORK: "0x9AAb3f75489902f3a48495025729a0AF77d4b11e",
     ETH: ethers.getAddress("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"),
     WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
@@ -62,22 +63,30 @@ async function main() {
     const mosaicaLibAddress = await mosaicaLib.getAddress()
 
     const dexConnectorStorage = await deployDexConnectorStorage();
-    const uniswapV2 = await deployUniswapV2LikeConnector(mosaicaLibAddress, "Uniswap V2", addresses.UNISWAP_V2_ROUTER);
-    const sushiswap = await deployUniswapV2LikeConnector(mosaicaLibAddress, "Sushiswap V2", addresses.SUSHISWAP_V2_ROUTER);
+
+    const uniSwapV2 = await deployUniswapV2LikeConnector(mosaicaLibAddress, "Uniswap V2", addresses.UNISWAP_V2_ROUTER);
+    await uniSwapV2.enableConnector();
+    
     const kyber = await deployKyberConnector(mosaicaLibAddress);
+    await kyber.enableConnector();
+
+    const sushiSwap = await deployUniswapV2LikeConnector(mosaicaLibAddress, "Sushiswap V2", addresses.SUSHISWAP_V2_ROUTER);
+    const pancakeSwap = await deployUniswapV2LikeConnector(mosaicaLibAddress, "Pancakeswap V2", addresses.PANCAKE_V2_ROUTER);
 
     const portfolioFactory = await deployPortfolioFactory(mosaicaLibAddress);
 
-    await dexConnectorStorage.addConnectorContract(await uniswapV2.getAddress());
+    await dexConnectorStorage.addConnectorContract(await uniSwapV2.getAddress());
+    //await dexConnectorStorage.addConnectorContract(await sushiswap.getAddress());
     await dexConnectorStorage.addConnectorContract(await kyber.getAddress());
 
-    const [owner, portfolioOwner1, portfolioOwner2] = await ethers.getSigners();    
-    
+    const [owner, portfolioOwner1, portfolioOwner2] = await ethers.getSigners(); 
+    await fundAccountWithToken(owner.address, owner, addresses.WETH, addresses.WETH_WHALE, ethers.parseEther("50"));
+
     // USER 1 Portfolio
     await portfolioFactory.connect(portfolioOwner1).createPortfolio(
         [{
             srcToken: addresses.ETH,
-            dexConnectorAddress: await uniswapV2.getAddress(),
+            dexConnectorAddress: await uniSwapV2.getAddress(),
             destToken: addresses.USDC,
             amount: ethers.parseEther("1"),
             slippage: 5
@@ -87,8 +96,14 @@ async function main() {
             destToken: addresses.UNI,
             amount: ethers.parseEther("1"),
             slippage: 5
+        },{
+            srcToken: addresses.ETH,
+            dexConnectorAddress: await uniSwapV2.getAddress(),
+            destToken: addresses.DAI,
+            amount: ethers.parseEther("1"),
+            slippage: 5
         }],
-        {value: ethers.parseEther("3")}
+        {value: ethers.parseEther("4")}
     );
 
     // USER 2 Portfolio
@@ -100,14 +115,15 @@ async function main() {
     
     const contractAddresses = {
         dexConnectorStorage: await dexConnectorStorage.getAddress(),
-        uniswapV2: await uniswapV2.getAddress(),
-        sushiswap: await sushiswap.getAddress(),
+        uniswapV2: await uniSwapV2.getAddress(),
+        sushiswap: await sushiSwap.getAddress(),
         kyber: await kyber.getAddress(),
+        pancakeswap: await pancakeSwap.getAddress(),
         portfolioFactory: await portfolioFactory.getAddress()
     };
 
     fs.writeFileSync(
-        'client/src/contract-addresses.json', 
+        'client/src/data/contract-addresses.json', 
         JSON.stringify(contractAddresses), 
         { flag: 'w' }
     );

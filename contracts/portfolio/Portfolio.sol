@@ -75,11 +75,15 @@ contract Portfolio is Ownable {
         external payable 
         onlyOwner equalsEthValueAndAmount(assetAddress, amount) enoughTokenBalance(assetAddress, amount)
         {
-            // receives a new asset form the owner
-            if (!MosaicaLib.isEth(assetAddress)) {
+            uint256 newBalance;
+            if (MosaicaLib.isEth(assetAddress)) {
+                newBalance = address(this).balance;
+            } else {
                 IERC20(assetAddress).safeTransferFrom(msg.sender, address(this), amount);
+                newBalance = IERC20(assetAddress).balanceOf(address(this));
             }
-            updateAssetStorage(assetAddress, amount);
+            updateAssetStorage(assetAddress, newBalance);
+            emit MosaicaLib.AddAsset(address(this), assetAddress, amount, block.timestamp);
         }
 
     /**
@@ -97,8 +101,11 @@ contract Portfolio is Ownable {
         onlyAuthorized() enoughEthValue(params) enoughTokensBalance(params)
         {
             for (uint i; i < params.length; i++) {
+                
+                uint256 destAmount;
+
                 if (MosaicaLib.isEth(params[i].srcToken)) {
-                    swapEth(params[i].dexConnectorAddress, address(this), params[i]);
+                    destAmount = swapEth(params[i].dexConnectorAddress, address(this), params[i]);
                 } else { 
                     if (msg.sender != factory) {
                         // Should transfer tokens when call is coming from the user
@@ -106,18 +113,40 @@ contract Portfolio is Ownable {
                     }
 
                     IERC20(params[i].srcToken).approve(params[i].dexConnectorAddress, params[i].amount);
-                    swap(params[i].dexConnectorAddress, address(this), params[i]);
+                    destAmount = swap(params[i].dexConnectorAddress, address(this), params[i]);
                 }
-
-                uint256 balance = IERC20(params[i].destToken).balanceOf(address(this));
+                
+                uint256 balance = 0;
+                if (MosaicaLib.isEth(params[i].dexConnectorAddress)) {
+                    balance = address(this).balance;
+                } else {
+                    balance = IERC20(params[i].destToken).balanceOf(address(this));
+                }
+                
                 updateAssetStorage(params[i].destToken, balance);
+                emit MosaicaLib.BuyAsset(address(this), params[i].destToken, destAmount, block.timestamp);
             }
 
-            if (address(this).balance > 0) {
+            uint256 restEthAmount = deduceRestEthAmount(params);
+            if (restEthAmount > 0) {
                 updateAssetStorage(MosaicaLib.ETH_ADDRESS, address(this).balance);
+                emit MosaicaLib.AddAsset(address(this), MosaicaLib.ETH_ADDRESS, deduceRestEthAmount(params), block.timestamp);
             }
         }
-    
+
+    function deduceRestEthAmount(MosaicaLib.PortfolioParam[] calldata params)
+        internal 
+        returns(uint256 restEth) 
+        {
+            uint256 ethAmount;
+            for (uint i; i < params.length; i++) {
+                if (MosaicaLib.isEth(params[i].srcToken)) {
+                    ethAmount += params[i].amount;
+                }
+            }
+            restEth = msg.value - ethAmount;
+        }
+
     /**
      * @dev Withdraws specified assets from the portfolio to the owner’s wallet.
      * Swaps assets if needed before withdrawal.
@@ -139,6 +168,12 @@ contract Portfolio is Ownable {
                     swap(params[i].dexConnectorAddress, owner(), params[i]);
                 }
                 updateAssetStorage(params[i].srcToken, assetBalances[params[i].srcToken] - params[i].amount);
+
+                if (assetBalances[params[i].srcToken] == 0) {
+                    removeAssetFromList(params[i].srcToken);
+                }
+
+                emit MosaicaLib.WithdrawAsset(address(this), params[i].srcToken, params[i].amount, block.timestamp);
             }
         }
 
@@ -157,6 +192,19 @@ contract Portfolio is Ownable {
                 IERC20(token).safeTransfer(owner(), amount);
             }
         }
+
+    function removeAssetFromList(address tokenAddress) 
+        internal 
+        {
+            uint256 length = assetAddresses.length;
+            for (uint256 i = 0; i < length; i++) {
+                if (assetAddresses[i] == tokenAddress) {
+                    assetAddresses[i] = assetAddresses[length - 1];
+                    assetAddresses.pop();
+                    return;
+                }
+            }
+        }
     
     /**
      * @dev Internal function to perform a token-to-token swap using a DEX connector.
@@ -167,9 +215,10 @@ contract Portfolio is Ownable {
      */
     function swap(address connectorAddress, address to, MosaicaLib.PortfolioParam calldata params) 
         internal 
+        returns(uint256)
         {
             DexConnector dexConnector = DexConnector(connectorAddress);
-            dexConnector.swapTokens(
+            return dexConnector.swapTokens(
                 params.srcToken, 
                 params.destToken, 
                 to, 
@@ -187,9 +236,10 @@ contract Portfolio is Ownable {
      */
     function swapEth(address connectorAddress, address to, MosaicaLib.PortfolioParam calldata params) 
         internal 
+        returns(uint256)
         {
             DexConnector dexConnector = DexConnector(connectorAddress);
-            dexConnector.swapTokens{value: params.amount}(
+            return dexConnector.swapTokens{value: params.amount}(
                 params.srcToken, 
                 params.destToken, 
                 to, 
@@ -203,16 +253,16 @@ contract Portfolio is Ownable {
      * Adds the asset address if it does not already exist in the storage.
      *
      * @param asset The address of the asset to update.
-     * @param amount The amount of the asset to add.
+     * @param balance The amount of the asset to add.
      */
-    function updateAssetStorage(address asset, uint256 amount) 
+    function updateAssetStorage(address asset, uint256 balance) 
         internal 
         {
             // Add the asset address only if it doesn't exist in the mapping
             if (assetBalances[asset] == 0) {
                 assetAddresses.push(asset);
             }
-            assetBalances[asset] += amount;
+            assetBalances[asset] = balance;
         }
 
     /**

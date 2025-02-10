@@ -72,13 +72,13 @@ const DashboardRatio: React.FC = () => {
 
     return (
         <Card sx={{ padding: 0, borderColor: (theme) => theme.palette.divider }} variant="outlined">
-            <CardHeader title="Assets Ratio" />
+            <CardHeader title="Assets Ratio (ETH)" />
             <Divider />
             <CardContent>
                 {isLoading ? (
                     <LoadingComponent message={"Loading assets ratio"} />
                 ) : (
-                    <Chart options={pieChartOptions} series={pieSerie} type="pie" height="600px" width={"100%"} />
+                    <Chart options={pieChartOptions} series={pieSerie} type="pie" height="300px" width={"100%"} />
                 )}
             </CardContent>
         </Card>

@@ -16,7 +16,7 @@ const Logo: React.FC<LogoProps> = ({ handleMenuClose }) => {
     return (
         <LinkStyled to="/" onClick={handleMenuClose}>
             <img
-                src="/light-logo.svg"
+                src="/images/logos/header-logo.svg"
                 alt="logo"
                 height={70}
                 width={174}

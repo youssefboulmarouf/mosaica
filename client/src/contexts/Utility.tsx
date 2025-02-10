@@ -54,7 +54,7 @@ const fetchAssetEthPrice = async (
 const fetchEthDaiPrice = async (dexConnectorServices: DexConnectorService[]): Promise<string> => {
     const bestPrice: DexPrice = await getCurrentPrices(
         dexConnectorServices,
-        DefaultAddresses.ETH,
+        DefaultAddresses.WETH,
         DefaultAddresses.DAI,
         ethers.parseEther("1"),
     );

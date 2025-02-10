@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
-import { Card, CardContent, CardHeader, Divider } from "@mui/material";
+import { Card, CardContent, CardHeader, Divider, MenuItem, Select } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { ApexOptions } from "apexcharts";
 import { usePortfolioDetailsContext } from "../../../../contexts/PortfolioDetailsContext";
@@ -39,8 +39,8 @@ const PortfolioChart: React.FC = () => {
                 labels: {
                     formatter: (value: string) => {
                         const date = new Date(parseInt(value) * 1000);
-                        const day = date.getDate().toString().padStart(2, "0");
-                        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+                        const day = date.getUTCDate().toString().padStart(2, "0");
+                        const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
                         return `${day}/${month}`;
                     },
                 },
@@ -68,6 +68,7 @@ const PortfolioChart: React.FC = () => {
                 },
             },
         });
+
         setAreaSerie(portfolioHistoricValue.map((h) => parseFloat(h.tokenPriceWithEth)));
     }, [portfolioHistoricValue]);
 
@@ -80,7 +81,7 @@ const PortfolioChart: React.FC = () => {
 
     return (
         <Card sx={{ padding: 0, borderColor: (theme) => theme.palette.divider }} variant="outlined">
-            <CardHeader title="90 Days Value Variation (ETH)" />
+            <CardHeader title="90 Days Portfolio Variation (ETH)"/>
             <Divider />
             <CardContent>
                 {isLoadingHistoricValue ? (

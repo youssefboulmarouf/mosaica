@@ -25,7 +25,7 @@ import { Asset } from "../../../interfaces";
 import LoadingComponent from "../../../ui-components/LoadingComponent";
 
 const PortfolioAssetPerformance: React.FC = () => {
-    const { currentPortfolio, assetsHistoricPrices, isLoadingHistoricValue } = usePortfolioDetailsContext();
+    const { currentPortfolio, assetsTotalValue, isLoadingHistoricValue } = usePortfolioDetailsContext();
     const [openRow, setOpenRow] = useState(false);
     const [rowToOpen, setRowToOpen] = useState<number>(0);
 
@@ -37,16 +37,16 @@ const PortfolioAssetPerformance: React.FC = () => {
     };
 
     const calculateUsdPercentage = (asset: Asset, days: number): number => {
-        if (assetsHistoricPrices[asset.assetAddress]) {
-            const tokenPrice: string[] = assetsHistoricPrices[asset.assetAddress].map((p) => p.tokenpriceWithUsd);
+        if (assetsTotalValue[asset.assetAddress]) {
+            const tokenPrice: string[] = assetsTotalValue[asset.assetAddress].map((p) => p.tokenpriceWithUsd);
             return calculatePercentage(tokenPrice, days);
         }
         return 0;
     };
 
     const calculateEthPercentage = (asset: Asset, days: number): number => {
-        if (assetsHistoricPrices[asset.assetAddress]) {
-            const tokenPrice: string[] = assetsHistoricPrices[asset.assetAddress].map((p) => p.tokenPriceWithEth);
+        if (assetsTotalValue[asset.assetAddress]) {
+            const tokenPrice: string[] = assetsTotalValue[asset.assetAddress].map((p) => p.tokenPriceWithEth);
             return calculatePercentage(tokenPrice, days);
         }
         return 0;
@@ -56,15 +56,21 @@ const PortfolioAssetPerformance: React.FC = () => {
         if (tokenPrice.length === 0 || tokenPrice.length < days) {
             return 0;
         }
-
+    
         const latestPrice = parseFloat(tokenPrice[0]);
         const daysAgoPrice = parseFloat(tokenPrice[days - 1]);
-
+    
         if (isNaN(latestPrice) || isNaN(daysAgoPrice)) {
             return 0;
         }
+    
+        if (daysAgoPrice === 0) {
+            return latestPrice > 0 ? 100 : 0;
+        }
+        
         return ((latestPrice - daysAgoPrice) / daysAgoPrice) * 100;
     };
+    
 
     return (
         <Card sx={{ padding: 0, borderColor: (theme) => theme.palette.divider }} variant="outlined">

@@ -1,4 +1,4 @@
-import { ethers, Contract, Signer, Interface, InterfaceAbi } from 'ethers';
+import { Contract, Signer, Interface, InterfaceAbi } from 'ethers';
 
 export class MosaicaContract {
     public contract: Contract;

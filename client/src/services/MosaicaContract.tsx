@@ -5,7 +5,7 @@ export class MosaicaContract {
     public contractAddress: string;
 
     constructor(signer: Signer, abi: Interface | InterfaceAbi, contractAddress: string) {
-        this.contract = new ethers.Contract(contractAddress, abi, signer);
+        this.contract = new Contract(contractAddress, abi, signer);
         this.contractAddress = contractAddress;
     }
 

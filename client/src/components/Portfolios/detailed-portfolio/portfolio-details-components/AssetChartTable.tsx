@@ -14,72 +14,79 @@ interface AssetChartTableProps {
 
 const AssetChartTable: React.FC<AssetChartTableProps> = ({ openRow, rowToOpen, rowIndex, asset }) => {
     const theme = useTheme();
-    const { assetsHistoricPrices } = usePortfolioDetailsContext();
-    const [dates, setDates] = useState<number[]>([]);
+    const { assetsTotalValue } = usePortfolioDetailsContext();
+    const [areaChartOptions, setAreaChartOptions] = useState<ApexOptions>({});
     const [assetValue, setAssetValue] = useState<number[]>([]);
 
     useEffect(() => {
-        if (asset && assetsHistoricPrices[asset.assetAddress]) {
-            setDates(assetsHistoricPrices[asset.assetAddress].map((h) => h.date));
-            setAssetValue(assetsHistoricPrices[asset.assetAddress].map((h) => parseFloat(h.tokenPriceWithEth) * parseFloat(asset.balance)));
-        }
-    }, [asset, assetsHistoricPrices]);
+        if (asset && assetsTotalValue[asset.assetAddress]) {
+            setAreaChartOptions(
+                {
+                    chart: {
+                        id: "area-chart",
+                        fontFamily: "inherit",
+                        foreColor: "#adb0bb",
+                        zoom: {
+                            enabled: true,
+                        },
+                        toolbar: {
+                            show: false,
+                        },
+                    },
+                    dataLabels: {
+                        enabled: false,
+                    },
+                    stroke: {
+                        width: 3,
+                        curve: "smooth",
+                    },
+                    colors: [theme.palette.primary.main],
+                    xaxis: {
+                        type: "datetime",
+                        categories: assetsTotalValue[asset.assetAddress].map((h) => h.date),
+                        labels: {
+                            formatter: (value: string) => {
+                                const date = new Date(parseInt(value) * 1000);
+                                const day = date.getDate().toString().padStart(2, "0");
+                                const month = (date.getMonth() + 1).toString().padStart(2, "0");
+                                return `${day}/${month}`;
+                            },
+                        },
+                    },
+                    yaxis: {
+                        opposite: false,
+                        labels: {
+                            show: true,
+                            formatter: (value: number) => value.toFixed(5),
+                        },
+                    },
+                    legend: {
+                        show: true,
+                        position: "bottom",
+                        width: 50,
+                    },
+                    grid: {
+                        show: false,
+                    },
+                    tooltip: {
+                        theme: "dark",
+                        fillSeriesColor: false,
+                        y: {
+                            formatter: (value: number) => `${value.toFixed(5)} ETH`,
+                        },
+                    },
+                }
+            );
 
-    const optionsareachart: ApexOptions = {
-        chart: {
-            id: "area-chart",
-            fontFamily: "inherit",
-            foreColor: "#adb0bb",
-            zoom: {
-                enabled: true,
-            },
-            toolbar: {
-                show: false,
-            },
-        },
-        dataLabels: {
-            enabled: false,
-        },
-        stroke: {
-            width: 3,
-            curve: "smooth",
-        },
-        colors: [theme.palette.primary.main],
-        xaxis: {
-            type: "datetime",
-            categories: dates,
-            labels: {
-                formatter: (value: string) => {
-                    const date = new Date(parseInt(value) * 1000);
-                    const day = date.getDate().toString().padStart(2, "0");
-                    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-                    return `${day}/${month}`;
-                },
-            },
-        },
-        yaxis: {
-            opposite: false,
-            labels: {
-                show: true,
-                formatter: (value: number) => value.toFixed(5),
-            },
-        },
-        legend: {
-            show: true,
-            position: "bottom",
-            width: 50,
-        },
-        grid: {
-            show: false,
-        },
-        tooltip: {
-            theme: "dark",
-            fillSeriesColor: false,
-            y: {
-                formatter: (value: number) => `${value.toFixed(5)} ETH`,
-            },
-        },
-    };
+            const chartValue: number[] = [];
+            
+            assetsTotalValue[asset.assetAddress].forEach(av => {
+                chartValue.push(parseFloat(av.tokenPriceWithEth))
+            })
+
+            setAssetValue(chartValue);
+        }
+    }, [asset, assetsTotalValue]);
 
     const seriesareachart: ApexOptions["series"] = [
         {
@@ -90,7 +97,7 @@ const AssetChartTable: React.FC<AssetChartTableProps> = ({ openRow, rowToOpen, r
 
     return (
         <Collapse in={openRow && rowToOpen === rowIndex} timeout="auto" unmountOnExit>
-            <Chart options={optionsareachart} series={seriesareachart} type="area" height="300px" width="100%" />
+            <Chart options={areaChartOptions} series={seriesareachart} type="area" height="300px" width="100%" />
         </Collapse>
     );
 };

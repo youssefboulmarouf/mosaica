@@ -78,7 +78,6 @@ export const PortfolioDetailsProvider: React.FC<{ children: React.ReactNode; por
                     currentPortfolioServices.contractAddress,
                 );
                 setPortfolioActionEvents(events);
-                console.log("events: ", events);
             }
         };
 

@@ -33,7 +33,7 @@ const Navigation: React.FC = () => {
         <>
             <Container sx={{ maxWidth: "1400px !important" }}>
                 <ToolbarStyled>
-                    <Box sx={{ width: lgDown ? "45px" : "auto", overflow: "hidden" }}>
+                    <Box sx={{ width: lgDown ? "40px" : "auto", overflow: "hidden" }}>
                         <Logo handleMenuClose={() => {}} />
                     </Box>
                     {lgDown ? (

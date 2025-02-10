@@ -5,7 +5,6 @@ import Breadcrumb from "../../ui-components/Breadcrumb";
 import { PortfolioProvider } from "../../../contexts/PortfolioContext";
 import PortfolioChart from "./portfolio-details-components/PortfolioChart";
 import PortfolioAssetPerformance from "./portfolio-details-components/PortfolioAssetPerformance";
-import { useAppContext } from "../../../contexts/AppContext";
 import AddAssetDialog from "./portfolio-details-action-components/AddAssetDialog";
 import { PortfolioDetailsProvider } from "../../../contexts/PortfolioDetailsContext";
 import WithdrawAssetDialog from "./portfolio-details-action-components/withdraw-component/WithdrawAssetDrawer";
@@ -29,7 +28,6 @@ const BCrumb = [
 
 const PortfolioDetails: React.FC = () => {
     const location = useLocation();
-    const { portfolioFactoryService } = useAppContext();
     const { portfolioAddress } = location.state;
     const [openAddAssetDialog, setOpenAddAssetDialog] = useState<boolean>(false);
     const [openBuyAssetDrawer, setOpenBuyAssetDrawer] = useState<boolean>(false);
@@ -73,7 +71,7 @@ const PortfolioDetails: React.FC = () => {
                             </Grid>
 
                             <Grid item xs={12} lg={4}>
-                                <PortfolioHistory portfolioFactoryService={portfolioFactoryService} />
+                                <PortfolioHistory />
                             </Grid>
 
                             <Grid item xs={12} lg={12}>

@@ -11,39 +11,16 @@ import {
     timelineOppositeContentClasses,
 } from "@mui/lab";
 import UpdateDisabledIcon from "@mui/icons-material/UpdateDisabled";
-import PortfolioFactoryService from "../../../../services/PortfolioFactoryService";
 import { Erc20DataHolder } from "../../../../services/Erc20DataHolder";
 import { usePortfolioDetailsContext } from "../../../../contexts/PortfolioDetailsContext";
 import { useWalletContext } from "../../../../contexts/WalletContext";
-import { PortfolioActionEvent, PortfolioCreatedEvent, PortfolioEventType } from "../../../interfaces";
+import { PortfolioActionEvent, PortfolioEventType } from "../../../interfaces";
 import LoadingComponent from "../../../ui-components/LoadingComponent";
 
-interface PortfolioHistoryProps {
-    portfolioFactoryService: PortfolioFactoryService | null;
-}
-
-const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ portfolioFactoryService }) => {
+const PortfolioHistory: React.FC = () => {
     const { account } = useWalletContext();
-    const { currentPortfolio, currentPortfolioServices } = usePortfolioDetailsContext();
-    const [portfolioCreatedEvent, setPortfolioCreatedEvent] = useState<PortfolioCreatedEvent | null>(null);
-    const [portfolioActionEvents, setPortfolioActionEvents] = useState<PortfolioActionEvent[]>([]);
+    const { currentPortfolio, portfolioCreatedEvent, portfolioActionEvents } = usePortfolioDetailsContext();
     const [isLoadingErcData, setIsLoadingErcData] = useState<boolean>(true);
-
-    useEffect(() => {
-        const loadPortfolioEvent = async () => {
-            if (portfolioFactoryService && currentPortfolioServices && account) {
-                setIsLoadingErcData(true);
-                setPortfolioCreatedEvent(
-                    await portfolioFactoryService.getPortfolioCreatedEvent(currentPortfolioServices.contractAddress),
-                );
-                setPortfolioActionEvents(
-                    await currentPortfolioServices.getPortfolioActionEvents(currentPortfolioServices.contractAddress),
-                );
-            }
-        };
-
-        loadPortfolioEvent();
-    }, [currentPortfolioServices, portfolioFactoryService, currentPortfolio]);
 
     useEffect(() => {
         const loadErc20Data = async () => {
@@ -63,9 +40,10 @@ const PortfolioHistory: React.FC<PortfolioHistoryProps> = ({ portfolioFactorySer
 
     const formatDate = (timestamp: string) => {
         const date = new Date(parseInt(timestamp) * 1000);
-        const day = date.getDate().toString().padStart(2, "0");
-        const month = (date.getMonth() + 1).toString().padStart(2, "0");
-        const year = date.getFullYear();
+        const day = date.getUTCDate().toString().padStart(2, "0");
+        const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+        const year = date.getUTCFullYear();
+
         return `${day}/${month}/${year}`;
     };
 

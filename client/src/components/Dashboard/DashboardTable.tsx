@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePortfolioContext } from "../../contexts/PortfolioContext";
-import { Portfolio } from "../interfaces";
 import {
     Avatar,
     Box,
     Card,
     CardContent,
     CardHeader,
-    CircularProgress,
     Divider,
     IconButton,
     Stack,

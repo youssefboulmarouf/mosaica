@@ -4,11 +4,11 @@ Mosaica is a Web3 decentralized application (dApp) that allows users to create, 
 By integrating multiple decentralized exchanges (DEXs), users can buy, add, and withdraw assets while getting the best prices across platforms like Uniswap and Kyber.
 
 ## 🚀 Features
-✅ Multi-DEX Integration – Swap tokens via Uniswap, Kyber, and more \
-✅ Create & Manage Portfolios – Buy, add, and withdraw assets securely \
-✅ Real-time Portfolio Tracking – Monitor value changes with live charts \
-✅ Best Price Execution – Aggregates prices from multiple DEXs \
-✅ Admin Control Panel – Enable/disable DEX connectors dynamically
+✅ **Multi-DEX Integration** – Swap tokens via Uniswap, Kyber, and more \
+✅ **Create & Manage Portfolios** – Buy, add, and withdraw assets securely \
+✅ **Real-time Portfolio Tracking** – Monitor value changes with live charts \
+✅ **Best Price Execution** – Aggregates prices from multiple DEXs \
+✅ **Admin Control Panel** – Enable/disable DEX connectors dynamically
 
 ## 🏗 Tech Stack
 **Smart Contracts:** Solidity, Hardhat \

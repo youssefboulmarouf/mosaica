@@ -88,6 +88,7 @@ npm start
 **Portfolio:**	Manages assets, allowing buy/add/withdraw
 
 ## 📊 Architecture Diagram
+![ArchitectureDiagram](https://github.com/user-attachments/assets/4623dcf3-bb38-4364-b726-605b3d3af4c0)
 
 ## 🎥 Live Demo
 Coming soon

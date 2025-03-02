@@ -23,4 +23,5 @@ yarn-debug.log*
 yarn-error.log*
 
 /src/data/contract-addresses.json
+/src/data/contract-addresses-sepolia.json
 /src/artifacts

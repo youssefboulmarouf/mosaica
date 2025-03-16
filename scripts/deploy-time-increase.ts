@@ -94,9 +94,12 @@ async function setupPortfolios(portfolioFactory: Contracts.PortfolioFactory, uni
         ethers.parseEther("2")
     );
 
+    await increaseTime(5);
     await fundAccountWithToken(await portfolio1.getAddress(), portfolioOwner1, addresses.WETH, addresses.WETH_WHALE, ethers.parseEther("5"));
     await portfolio1.connect(portfolioOwner1).addAsset(addresses.WETH, ethers.parseEther("2"));
+    await increaseTime(5);
     await portfolio1.connect(portfolioOwner1).addAsset(addresses.ETH, ethers.parseEther("2"), { value: ethers.parseEther("2") });
+    await increaseTime(5);
     await portfolio1.connect(portfolioOwner1).buyAssets(
         [{ 
             srcToken: addresses.ETH, 
@@ -119,12 +122,48 @@ async function setupPortfolios(portfolioFactory: Contracts.PortfolioFactory, uni
     await portfolio2.connect(portfolioOwner2).addAsset(addresses.WETH, ethers.parseEther("2"));
 }
 
+async function mineBlocks(batchSize: number, blocksToMine: number) {
+    for (let i = 0; i < blocksToMine; i += batchSize) {
+        await Promise.all(Array(Math.min(batchSize, blocksToMine - i)).fill(null).map(() => network.provider.send("evm_mine")));
+        console.log(`🔄 Mined ${Math.min(i + batchSize, blocksToMine)}/${blocksToMine} blocks`);
+    }
+}
+
+async function increaseTime(days: number) {
+    const averageBlocksPerDay = 7200;
+    const batchSize = 1000;
+    const blocksToMine = days * averageBlocksPerDay;
+    const timeToIncrease = days * 86400; // 86400 seconds in a day
+
+    await ethers.provider.send("evm_increaseTime", [timeToIncrease]);
+    await mineBlocks(batchSize, blocksToMine);
+}
+
+async function resetEVMTime() {
+    const currentTimestamp = Math.floor(Date.now() / 1000); // Current real-world time in seconds
+
+    // Set the timestamp for the next block
+    await ethers.provider.send("evm_setNextBlockTimestamp", [currentTimestamp]);
+
+    // Mine a new block to apply the timestamp
+    await ethers.provider.send("evm_mine", []);
+
+    console.log(`🕒 Reset EVM time to current timestamp: ${currentTimestamp}`);
+}
+
 async function main() {
     if (!URL) throw new Error("Missing MAINNET_RPC_URL in .env file");
 
     const { dexConnectorStorage, connectors, kyberConnector, portfolioFactory } = await deployContracts();
     await setupPortfolios(portfolioFactory, connectors[0], kyberConnector);
 
+    const latestBlock = await new JsonRpcProvider(URL).getBlockNumber();
+    const currentBlock = await ethers.provider.getBlockNumber();
+    await mineBlocks(1000, latestBlock - currentBlock);
+
+    await resetEVMTime();
+
+    
     const contractAddresses = {
         dexConnectorStorage: await dexConnectorStorage.getAddress(),
         uniswapV2: await connectors[0].getAddress(),

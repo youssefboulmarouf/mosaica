@@ -1,7 +1,6 @@
 import React from "react";
 import AppBar from "@mui/material/AppBar";
 import { styled } from "@mui/material/styles";
-import HeaderAlert from "./HeaderAlert";
 import Navigation from "./Navigation";
 
 const MosaicaAppBar: React.FC = () => {
@@ -13,7 +12,6 @@ const MosaicaAppBar: React.FC = () => {
 
     return (
         <>
-            <HeaderAlert />
             <AppBarStyled position="sticky" color="default" elevation={8}>
                 <Navigation />
             </AppBarStyled>

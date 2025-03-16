@@ -13,7 +13,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: MAINNET_RPC_URL,
-        blockNumber: 21457857,
+        //blockNumber: 21457857,
       },
       gas: 300_000,
       initialBaseFeePerGas: 1_000_000,

@@ -72,10 +72,16 @@ npx hardhat node
 ```
 npx hardhat run ./scripts/deploy.ts --network localhost
 ```
-4. To deploy the contracts in an older block to see portfolio variation, uncomment line 16 in `hardhat.config.ts` and run:
+
+:warning: :warning: :warning:
+
+:warning: To deploy the contracts in an older block to see portfolio variation, uncomment line 16 in `hardhat.config.ts` and run:
 ```
 npx hardhat run ./scripts/deploy-time-increase.ts --network localhost
 ```
+:warning: But that will cause some price inconsistencies, since the script mine empty blocks which cause the prices stagnation 
+
+:warning: :warning: :warning:
 
 #### 2️⃣ Starting the Frontend
 Navigate to the client folder (/client) and run:
